@@ -1,0 +1,2324 @@
+<ArgosObjects>
+  <DataBlock Name="TWRBALN">
+    <MaxRevisions>10</MaxRevisions>
+    <RevisionControl>Yes</RevisionControl>
+    <WebView>Inherit</WebView>
+    <Author>mkarthik</Author>
+    <Create_Date>Fri, 28 Mar 2014 15:54:02 -0400</Create_Date>
+    <Description>List of Students with a Balance and Additional information.</Description>
+    <LastRunDate>Wed, 1 Oct 2014 08:15:00 -0400</LastRunDate>
+    <ModifiedBy>mkarthik</ModifiedBy>
+    <Modify_Date>Tue, 30 Sep 2014 13:06:11 -0400</Modify_Date>
+    <Note Title="Changes:">
+      <Text>1. Added columns for Health Insurance Voucher
+2. Added coulnm for TN_Plan  'Y' id student has 'INST' code
+3. Re wrote the who query to go against TWVACCD view to make it a lil bit faster. Still quite slow due to all the data it pulls.</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Tue, 24 Jul 2012 10:17:20 -0400</Added_Date>
+      <Activity_Date>Fri, 27 Jul 2012 10:02:46 -0400</Activity_Date>
+    </Note>
+    <Note Title="Changes:">
+      <Text>1. Changed column REG_DATE to EARLIEST_REG_DATE. This shows the first registration date for the term. Originally this column was looking at SFRSTCR table but now looks at SFASTCA table as per Regina's request below -
+
+"Hi Mattie,
+I ran a TWRBALN for 201209 this afternoon, and found three students with wrong registration dates. The registration date should be the first day the student registered for the term. For these three students, the date on the report is 8/10/12, but their first registration dates are as follows:
+
+00237300 Brudnick, Ashley 8/6/12
+00151180 Flanagan, Joanne 7/16/12
+00260543 Morse, Brian 7/23/12
+
+I don’t know if there are any others, but I found these three because they also had TN Due dates of 8/15/12, and they should not have because Prakash ran the last of his bills yesterday.
+
+I rely on this “first date of registration” a great deal in making decisions, so I really need it to be accurate.
+
+Thanks for your help,
+I am sending you the file…
+Regina
+"......
+
+2. New Column FIRST_ WEB_REG shows 'Y' if the EARLIEST_REG_DATE was a web registration else null. This looks at SFRSTCA table to correspond to the EARLIEST_REG_Date.
+3. New Column LAST_REG_DT shows the last registration date for the term. Looks at SFRSTCR table.
+4. New Column LAST_WEB_REG shows 'Y' if the LAST_REG_DT was a web registration else null. Looks at SFRSTCR table.</Text>
+      <Author>mkarthik</Author>
+      <Modified_By>mkarthik</Modified_By>
+      <Added_Date>Fri, 3 Aug 2012 11:48:48 -0400</Added_Date>
+      <Activity_Date>Mon, 18 Aug 2014 12:33:27 -0400</Activity_Date>
+    </Note>
+    <Note Title="Changes AUTH and AUTH_DIFF columns back to pre-TWVACCD:">
+      <Text>Changed AUTH and AUTH_DIFF to come from TWVAUTH instead of TWVACCD view. by using a left outter join on TWVAUTH view.
+
+As per Regina's email request on 8/15/2012 -
+
+Hello ladies,
+I hate to be a pest, but in TWRBALN the AUTH column is now displaying a 0 when there is no Authorized or memoed aid. Previously, when there was no authorized or memoed aid, the field remained blank.
+A blank is what I need, because I now have to change the sort from Z to A in order to delete the authorized students from my list as I filter out the different categories.
+I think the protocol is to not display anything if there is nothing to display.  -0- implies that there used to be something that has now changed to 0.  I need to have the field just plain blank if there is no value to put there.
+Do I need to submit a new ticket?
+Regina
+
+Regina Correia-Branco
+Bursar
+Northern Essex Community College
+100 Elliott Street
+Haverhill, MA 01830
+ 
+Ph: 978.556.3903 Fx: 978.556.3171
+eMail: rcorreiabranco@necc.mass.edu
+
+
+Additional changes -
+Phone number comes from SWVTELE view ( oldway ) vs. using SPRTELE.rowid.</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Thu, 16 Aug 2012 07:58:19 -0400</Added_Date>
+      <Activity_Date>Mon, 20 Aug 2012 10:37:37 -0400</Activity_Date>
+    </Note>
+    <Note Title="Changed AUTH and AUTH_DIFF yet again.">
+      <Text>Regina pointed out that if there was no FinAid ever the AUTH column should be null/empty/blank.
+
+Now query does a left outer join to RPRATRM tbl to see if student pidm exists if yes use TVWACCD $amt else null.
+
+Moved to PROD on 9/20/2012
+</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Wed, 5 Sep 2012 10:47:12 -0400</Added_Date>
+      <Activity_Date>Thu, 20 Sep 2012 14:08:20 -0400</Activity_Date>
+    </Note>
+    <Note Title="Changed AUTH column checking to verify memo'd aid.">
+      <Text>Changed LEFT OUTERJOIN on RPRATRM sql to match on only pidm and term_code
+Original RPRARTM had additional matching
+     rpratrm.rpratrm_authorize_amt is not null
+  AND rpratrm.rpratrm_offer_amt is not null 
+
+Student example:
+00239905	McCann	Kyle
+
+As per Regina's email on 11-30-2012 -   
+This student has memo’d aid.  Both memoed and authorized aid are supposed to be added to come up with the number that is displayed in the AUTh column. That’s the way it has been for some time now.
+Regina
+
+Explanation - This student had null for authorised aid and therefore had a null in the AUTH column of the report as the record did not get picked up by the leftouter join on RPRATRM.
+
+-- Moved to production 12-03-2012
+</Text>
+      <Author>mkarthik</Author>
+      <Modified_By>mkarthik</Modified_By>
+      <Added_Date>Fri, 30 Nov 2012 12:29:35 -0400</Added_Date>
+      <Activity_Date>Mon, 3 Dec 2012 08:39:11 -0400</Activity_Date>
+    </Note>
+    <Note Title="Changed Code for TouchNet Due Date.">
+      <Text>Initially the date was being pulled from TBRACCD_DUE_DATE. This field is no longer behaving the way it used to. Some background processing has changed and now the correct date is stored in TBBSTMT table. Change the code to look at TBBSTMT_DUE_DATE.</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Mon, 7 Jan 2013 11:19:30 -0400</Added_Date>
+      <Activity_Date>Mon, 7 Jan 2013 11:19:30 -0400</Activity_Date>
+    </Note>
+    <Note Title="3 New Columns added to datablock and report.">
+      <Text>As per Joan Scionti -
+    ".......REMOVE the New Student, Returning Student, Returning Grad Student, Former Student
+And replace them with one field      Student Type = SGBSTDN_STYP_CODE  based on the Term Selected ".....
+
+Columns added -
+1.FA_ FSUSP - FinAid Suspended
+2. FA_SAPAP - FinAid suspension Appeal
+3.FA_ EFC
+Housekeeping - Added few standardization on for the dashboard.
+
+3/29/2013  As per Joan-
+Can you put the ISIR column with the EFC, FSUSP, SAPAP columns and put an “FA_” with each of the name?  They are all Fin Aid.  
+
+Additional Column
+4. FA_ISIR
+
+
+
+
+</Text>
+      <Author>mkarthik</Author>
+      <Modified_By>mkarthik</Modified_By>
+      <Added_Date>Thu, 17 Jan 2013 07:39:13 -0400</Added_Date>
+      <Activity_Date>Fri, 29 Mar 2013 14:10:41 -0400</Activity_Date>
+    </Note>
+    <Note Title="Clearer definition of AUTH blanks.">
+      <Text>As per Regina's feed back -
+First of all, I noted that the issue of how AUTH is displayed has not been fixed. I had requested that if a student has NO authorized  or memoed aid—even if he did have before—that the field should display as BLANK.  It is still displaying as a “0” when (I presume) the student previously had authorized or memoed aid.
+Not sure you understand the problem: when I sort on AUTH, it makes a big difference if there is a “0” or a “blank” in that column. I probably don’t need to explain that. But it means that I always have to be on the alert to make sure that I don’t have two separate groups of students when I sort on AUTH.
+
+Solution - Took out RPRATRM, Changed AUTH to be if 0 then display null else TWVACCD $amt.</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Wed, 15 May 2013 18:53:46 -0400</Added_Date>
+      <Activity_Date>Wed, 15 May 2013 18:53:46 -0400</Activity_Date>
+    </Note>
+    <Note Title="Moved into Production">
+      <Text>I have run the report for two different terms, to make sure that both the AUTH and the ISIR and EFC looked O.K. And they do.
+You can move this version to production when you get a chance.
+Thanks,
+Regina
+</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Wed, 22 May 2013 16:25:31 -0400</Added_Date>
+      <Activity_Date>Wed, 22 May 2013 16:25:31 -0400</Activity_Date>
+    </Note>
+    <Note Title="Memo Activity Date added.">
+      <Text>As per Regina's ticket request -
+
+"Would you please add the Activity Date found on the Memo page of TSADETL, to the TWRBALN report, and please put the date in a column next to Memo_User. 
+Thanks, 
+Regina"</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Fri, 30 Aug 2013 08:07:16 -0400</Added_Date>
+      <Activity_Date>Fri, 30 Aug 2013 08:07:16 -0400</Activity_Date>
+    </Note>
+    <Note Title="Prior Payment Term">
+      <Text>Notes: Mataches only for last credit term term only -
+
+As per Rgina's request -
+
+I need to have another column added to the TWRBALN report with the title:
+PRIOR_PAYMENT
+That column will be populated with one of four Banner Category Codes: TRD, FA, LNS, CSH
+
+The report needs to refer to the last term that the student had charges. 
+        Then it should look for a TRD category Detail Code. If one exists, then  TRD populates the cell.
+        If no TRD exists, then it looks for an FA category Detail Code. If one exists, then  FA populates the cell.
+        If no FA exists, then it looks for an LNS category Detail Code.  If one exists, the  LNS populates the cell.
+        If no LNS exists, then it looks for a CSH category Detail Code. If one exists, then CSH populates the cell.
+        In the event that none of the Detail Codes within the above 4 categories exists in that term, then leave the cell blank.
+</Text>
+      <Author>mkarthik</Author>
+      <Modified_By>mkarthik</Modified_By>
+      <Added_Date>Tue, 17 Dec 2013 13:24:17 -0400</Added_Date>
+      <Activity_Date>Tue, 17 Dec 2013 14:08:43 -0400</Activity_Date>
+    </Note>
+    <Note Title="Added RWRBOOX_AMT, RWRBOOK_ACTIVITY_DATE">
+      <Text>As per Regina's ticket request -
+
+"Ticket Created
+Please add the following information to TWRBALN.
+I would lik to have the Amount (of book voucher) and Activity Date  which appears in RWABOOK pertinent to the term for which TWRBALN is run.
+
+These two columns should appear between  BALANCE	and
+NECC_INST_BEFORE_TOUCHNET_AMT
+
+
+Let me know if you have any questions, and if I need to contact Alexis for permission to have this appear on my report. Thenks, Regina"
+
+Added max(RWRBOOK_AMT) as BOOK_AMT and max(RWRBOOK_ACTIVITY_DATE) as NEWEST BOOK ACTIVITY</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Wed, 12 Feb 2014 08:19:08 -0400</Added_Date>
+      <Activity_Date>Wed, 12 Feb 2014 08:19:08 -0400</Activity_Date>
+    </Note>
+    <Note Title="Withdrawl Dates Added.">
+      <Text>As per Regina Correa-Branco's helpdesk request -
+
+In order to comply with collection activity guidlines, I need to have 4 more columns added to TWRBALN. 
+In a given semester: 
+1. Students with at least one NW for a grade/registration status. 
+This column could indicate just a Y/N. 
+2. The latest date of the NW(s) for that student. 
+3. Students with ALL W(s) for a grade/registration status 
+4. The latest date of the W(s) for that student. 
+
+I can further elaborate this request with whomever is assigned to it. 
+
+Regina
+
+
+Added two columns to datablock -
+- Academic_Withdrawal_Date (for NW)
+- Student_Withdrawal_date (for W)</Text>
+      <Author>mkarthik</Author>
+      <Modified_By/>
+      <Added_Date>Fri, 28 Mar 2014 07:50:56 -0400</Added_Date>
+      <Activity_Date>Fri, 28 Mar 2014 07:50:56 -0400</Activity_Date>
+    </Note>
+    <Note Title="Change EARLIEST_REG_DATE column.">
+      <Text>As per Regina's email:
+
+The highlighted record in TWRBALN which was run today, shows an incorrect reg date for that student. The reg date should be the first reg date that results in a student accounts transaction.  For this student, that was August 11.  The report states 6/30/14. This made me think that the student had never received a bill when he should have.
+Where is this reporting getting this information if not from SFAREGS?
+Regina
+....
+Example was wfor Student ID: 00284290 Yazaroglu, Furkan
+....
+Resolution: Added to where clause -
+" and stca.sfrstca_rsts_code in ('RE', 'RW')" </Text>
+      <Author>mkarthik</Author>
+      <Modified_By>mkarthik</Modified_By>
+      <Added_Date>Mon, 18 Aug 2014 13:24:38 -0400</Added_Date>
+      <Activity_Date>Mon, 18 Aug 2014 13:29:30 -0400</Activity_Date>
+    </Note>
+    <Note Title="Earliest Transaction Date.">
+      <Text>The last change to the Earliest_Reg_Dt is not not what Regina needs.  She is looking for the earliest transaction date in TBRACCD forthe pidm for the term as per email communications -
+
+Mattie,
+I think you have a good idea to keep the EARLIEST_REG_DATE as is and add a new column to show the earliest transaction for the term (TBRACCD_EFFECTIVE_DATE). 
+ Often it is helpful to see how early a student registers before fee assessment for the term occurs. For example, if a student registers in April—and the TBRACCD_EFFECTIVE_DATE is only in June (when Fee Assessment is run), then I know that the student may have changed his mind about attending, and he will more likely get dropped for non-payment when he doesn’t respond to eBills and callouts.  The later a student registers, the more likely he really wants to attend, and just needs more time to file financial aid or come up with the money to pay the bill.
+
+As to the other 3 columns, I am not clear on what you are doing to capture this date. If you mean that you will not look at TBRACCD_EFFECTIVE_DATE, but will continue to look at the first date in SFAREGS, then 
+
+•	FIRST_WEB_REG (Y/N) (Y= Earliest Registration was via the web) This will be O.K. because it tells me that the student initially registered on the WEB.
+•	LAST_REG_DT and  (newest date when student  registered for a course) This needs to be the TBRACCD_EFFECTIVE_DATE because I use this to find students who may have already paid their bill in full, and then add new courses—with no payment—and they could get dropped in the Drop for Non-Payment Process. 
+•	LAST_WEB_REG(Y/N). (Y = Last_Reg_Dt was via the web) You may eliminate this column altogether.  It didn’t turn out to be very useful, because the web is turned off at a certain point, and students still continue to drop/add in person, over the phone, etc. 
+
+Let me know if you have any questions.  I hope I understood your question!
+Regina
+
+
+Regina Correia-Branco
+Bursar
+Northern Essex Community College
+100 Elliott Street
+Haverhill, MA 01830
+ 
+Ph: 978.556.3903 Fx: 978.556.3171
+eMail: rcorreiabranco@necc.mass.edu
+From: Karthik, Mathangi 
+Sent: Friday, September 12, 2014 1:38 PM
+To: Correia-Branco, Regina
+Cc: Firth, Christopher L
+Subject: Follow-up on Registration date column on TWRBALN.
+
+Hi Regina,
+
+I am looking all the way back to TWRBALN when it was a oracle report. The REG_DATE ( registration date column) pulls from the SFAREGS form or in sql language min(sfrstcr.sfrstcr_rsts_date) REG_DATE. I believe this where the misinterpretation of the “Earliest Registration date” stems  from. 
+
+As per  your request in our meeting today I will change this column to match the date seen on TWASPAY form and the date will be TBRACCD_EFFECTIVE_DATE from the AR table of TBRACCD.
+
+There 3 other columns in the which also look at SFAREGS form. They are – 
+FIRST_WEB_REG (Y/N) (Y= Earliest Registration was via the web)
+LAST_REG_DT and  (newest date when student  registered for a course)
+LAST_WEB_REG(Y/N). (Y = Last_Reg_Dt was via the web)
+
+Of these three columns, the FIRST_WEB_REG (Y/N value) will be incorrect as it will no longer refer to the earliest registration date via the web.
+
+Please advise if you still require the above mention 3 columns. Would you like to keep the EARLIEST_REG_DATE as is and add a new column to show the first transaction for the term (TBRACCD_EFFECTIVE_DATE).
+
+Mattie
+</Text>
+      <Author>mkarthik</Author>
+      <Modified_By>mkarthik</Modified_By>
+      <Added_Date>Wed, 24 Sep 2014 13:39:44 -0400</Added_Date>
+      <Activity_Date>Tue, 30 Sep 2014 13:24:46 -0400</Activity_Date>
+    </Note>
+    <Revisions>
+      <Revision>
+        <Author>mkarthik</Author>
+        <ActivityDate>Mon, 18 Aug 2014 12:49:33 -0400</ActivityDate>
+        <Note>Created new DataBlock</Note>
+        <Data>&lt;datablock&gt;&#xD;
+ &lt;information&gt;&#xD;
+  &lt;description&gt;Argos Object File&lt;/description&gt;&#xD;
+  &lt;development&gt;Argos Builder Version 4.3 Build 751&lt;/development&gt;&#xD;
+  &lt;company&gt;Evisions, Inc.&lt;/company&gt;&#xD;
+  &lt;date&gt;Mon, 18 Aug 2014 12:49:33 -0400&lt;/date&gt;&#xD;
+ &lt;/information&gt;&#xD;
+ &lt;query FreeType="True" ExpectRecordSet="True"&gt;&#xD;
+  &lt;ADOOptions/&gt;&#xD;
+  &lt;visible_field Field="PIDM"&gt;&#xD;
+   &lt;DataType&gt;Integer&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TERM"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ID"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LAST"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FIRST"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="NAME"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SSN"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="PRIMARY_MAJOR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MAJOR_DESC_1"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SECONDARY_MAJOR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MAJOR_DESC_2"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ACADEMIC_WITHDRAWAL_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STUDENT_WITHDRAWAL_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="EARLIEST_REG_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FIRST_WEB_REG"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LAST_REG_DT"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LAST_WEB_REG"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="HEALTH"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="INSURANCE_VOUCHER"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="INSURANCE_VOUCHER_USER"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FORMER_DUE_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TOUCHNET_DUE_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BALANCE"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BOOK_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BOOK_ACTIVITY"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="NECC_INST_BEFORE_TOUCHNET_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AUTH"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AUTH_DIFF"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AR_MEMO_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MEMO_USER"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MEMO_ACTIVITY_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TN_INSTALLMENT_PLAN"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TN_MEMO_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="OTHER_MEMOS"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SUM_CREDITS"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SUM_BILLABLE"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ISIR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BILLING_COUNT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="RETC"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BY_CODE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BY_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="OTH_HOLDS"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STREET1"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STREET2"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="CITY"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STATE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ZIP"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AREA"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="PHONE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LIST_FUT_REG"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STUDENT_TYPE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_ISIR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_EFC"&gt;&#xD;
+   &lt;DataType&gt;BigInt&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_FSUSP"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_SAPAP"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="PRIOR_PAYMENT"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;Sql&gt;select distinct t.TWVACCD_PIDM                            PIDM,&#xD;
+       t.TWVACCD_TERM_CODE                                TERM,&#xD;
+       SPRIDEN_ID                                         ID,&#xD;
+       SPRIDEN_LAST_NAME                                  LAST,&#xD;
+       SPRIDEN_FIRST_NAME                                 FIRST,&#xD;
+       SPRIDEN_LAST_NAME || ', ' || SPRIDEN_FIRST_NAME    NAME,&#xD;
+       goksels.f_name_bio_value(t.TWVACCD_PIDM, 'SSN')  SSN,&#xD;
+       major_query.MAJOR                                PRIMARY_MAJOR,&#xD;
+       major_query.MAJOR_DESC                           MAJOR_DESC_1,&#xD;
+       major_query.sgbstdn_majr_code_2                  SECONDARY_MAJOR,&#xD;
+       major_query.MAJOR_2_DESC                         MAJOR_DESC_2,&#xD;
+       NW_Student.NW_DROP_DATE                          Academic_Withdrawal_Date,&#xD;
+       W_STUDENT.Withdrawal_date                        Student_Withdrawal_date,&#xD;
+       reg_query.EARLIEST_REG_DATE,&#xD;
+       web.first_web_reg                                FIRST_WEB_REG,&#xD;
+       LastReg_query.LASTREG_DT                         LAST_REG_DT,&#xD;
+       weblast.last_web_reg                             LAST_WEB_REG,&#xD;
+       twbhlth.twbhlth_health_code                      HEALTH,&#xD;
+       Insurance_Voucher.Twbvouc_Voucher_Code           Insurance_Voucher,&#xD;
+       Insurance_Voucher.Twbvouc_User                   Insurance_Voucher_User,&#xD;
+       NECC_INST_due_date.FORMER_due_date,&#xD;
+       TN.Touchnet_DUE_Date,&#xD;
+       t.TWVACCD_BALANCE                                BALANCE,&#xD;
+       FA_BOOK.AMT                                      BOOK_AMT,&#xD;
+       FA_BOOK.MAX_DATE                                 BOOK_ACTIVITY,&#xD;
+       TWVINST_INSTALL_AMOUNT NECC_INST_BEFORE_Touchnet_Amt,&#xD;
+       /*(case&#xD;
+           when rpratrm.rpratrm_pidm is null -- does not exists in rpratrm&#xD;
+             then null&#xD;
+           else t.TWVACCD_FA_MEMO_AUTH_AMT&#xD;
+       end)                                             AUTH,*/&#xD;
+&#xD;
+       decode(t.TWVACCD_FA_MEMO_AUTH_AMT,0, null, t.TWVACCD_FA_MEMO_AUTH_AMT) AUTH,&#xD;
+&#xD;
+       t.TWVACCD_BALANCE_WITH_AIDMEMOS                  AUTH_DIFF,&#xD;
+&#xD;
+         (case&#xD;
+           when PaymentPlan_AR_Memo.pidm is not null&#xD;
+                and PaymentPlan_AR_Memo.tbrmemo_detail_code in ('AMS')&#xD;
+             then PaymentPlan_AR_Memo.tbrmemo_amount&#xD;
+           else null&#xD;
+          end)                                          AR_Memo_Amt, --OnPaymentPlanOrARMemo,&#xD;
+       PaymentPlan_AR_Memo.ar_memo_user                 Memo_User,&#xD;
+       PaymentPlan_AR_Memo.memo_activity_date           Memo_Activity_Date,&#xD;
+       INST_QUERY.INST                                  TN_INSTALLMENT_PLAN, --history of if on TN_PLAN for term&#xD;
+       (case&#xD;
+         when PaymentPlan_AR_Memo.pidm is not null&#xD;
+              and PaymentPlan_AR_Memo.tbrmemo_detail_code in ('PPMM')&#xD;
+           then PaymentPlan_AR_Memo.tbrmemo_amount&#xD;
+         else null&#xD;
+        end)                                            TN_MEMO_AMT, --Touchnet_Plan_Amount, &#xD;
+       (case&#xD;
+         when Other_Memos.Tbrmemo_Pidm is not null&#xD;
+           then 'Y'&#xD;
+         else NULL&#xD;
+        end)                                            Other_Memos,&#xD;
+&#xD;
+       SUM_CREDITS,&#xD;
+       SUM_BILLABLE,&#xD;
+       ISIR,&#xD;
+       BILLING_COUNT,&#xD;
+       RETC_QUERY.RETC                                  RETC,&#xD;
+       BY_CODE,&#xD;
+       BY_DATE,&#xD;
+       OTH_HOLDS,&#xD;
+&#xD;
+       SPRADDR.SPRADDR_STREET_LINE1                     STREET1,&#xD;
+       SPRADDR.SPRADDR_STREET_LINE2                     STREET2,&#xD;
+       SPRADDR.SPRADDR_CITY                             CITY,&#xD;
+       SPRADDR.SPRADDR_STAT_CODE                        STATE,&#xD;
+       SPRADDR.SPRADDR_ZIP                              ZIP,&#xD;
+       SWVTELE_PHONE_AREA                               AREA,&#xD;
+       SWVTELE_PHONE_NUMBER                             PHONE,&#xD;
+       --nvl(substr(SPRTELE_PHONE_NUMBER , 1,3), '')|| nvl(substr(SPRTELE_PHONE_NUMBER, 4,7), '') Phone,&#xD;
+       Future_Credits.CREDITS                           LIST_FUT_REG,&#xD;
+       MAJOR_QUERY.Student_Type                         STUDENT_TYPE,&#xD;
+      /* -- Removed as per Joan Scionti 2/14/2013, Replace by Student_Type&#xD;
+       NEW_STUDENT,&#xD;
+       RETURNING_STUDENT,&#xD;
+       RETURNING_GRAD_STUDENT,&#xD;
+       FORMER_STUDENT,&#xD;
+      */&#xD;
+       ISIR_QUERY.treq_code                             FA_ISIR,&#xD;
+       EFC_QUERY.EFC                                    FA_EFC,&#xD;
+       FA_SUSPEND.TREQ_CODE                             FA_FSUSP,&#xD;
+       FA_SUSPEND_APPEAL.TREQ_CODE                      FA_SAPAP,&#xD;
+       PRIOR_PMT.PMT                                    PRIOR_PAYMENT&#xD;
+&#xD;
+from necc.twvaccd t&#xD;
+  JOIN SPRIDEN on SPRIDEN_PIDM = t.TWVACCD_PIDM&#xD;
+               AND SPRIDEN_CHANGE_IND IS NULL&#xD;
+               AND (  (:parm_DD_Entity.Entity = 'Student'&#xD;
+                       and spriden_entity_ind = 'P'&#xD;
+                       AND t.TWVACCD_TERM_CODE = :parm_DD_Term.STVTERM_CODE&#xD;
+                      )&#xD;
+                    OR ( :parm_DD_Entity.Entity = 'Contract'&#xD;
+                         and spriden_entity_ind = 'C'&#xD;
+                         AND t.TWVACCD_TERM_CODE like ('%')&#xD;
+                       )&#xD;
+                   ) -- This drives who is displayed, the main where clause&#xD;
+  /* JOIN  (select TN.tbraccd_pidm pidm, TN.tbraccd_term_code term_code,&#xD;
+               (case&#xD;
+                   when TN.TBRACCD_TERM_CODE &amp;lt; '201201' --HardCoded, this is when touchnet went live&#xD;
+                     then NULL&#xD;
+                   else   max(TN.TBRACCD_DUE_DATE)&#xD;
+                  end ) Touchnet_DUE_Date&#xD;
+           from tbraccd TN&#xD;
+           group by TN.tbraccd_pidm, TN.tbraccd_term_code ) accd on accd.pidm = t.TWVACCD_PIDM&#xD;
+                              and accd.term_code = t.TWVACCD_TERM_CODE */&#xD;
+/*   TouchNet Due Date location has changed&#xD;
+  -- Mattie 1/7/2013&#xD;
+*/&#xD;
+ LEFT OUTER JOIN  (&#xD;
+          select TN.TBBSTMT_PIDM pidm, TN.TBBSTMT_TERM_CODE term_code,&#xD;
+               (case&#xD;
+                   when TN.TBBSTMT_TERM_CODE &amp;lt; '201201' --HardCoded, this is when touchnet went live&#xD;
+                     then NULL&#xD;
+                   else   max(TN.TBBSTMT_DUE_DATE)&#xD;
+                  end ) Touchnet_DUE_Date&#xD;
+          from TBBSTMT TN&#xD;
+          group by TN.TBBSTMT_PIDM, TN.TBBSTMT_TERM_CODE  ) TN on TN.pidm = t.TWVACCD_PIDM&#xD;
+                              and TN.term_code = t.TWVACCD_TERM_CODE&#xD;
+ /*-- Check to see if student has exists in rpratrm.&#xD;
+     -- if yes then use TWVACCD to show the $amt else null&#xD;
+ LEFT OUTER JOIN RPRATRM on rpratrm.rpratrm_pidm = t.TWVACCD_PIDM&#xD;
+                        AND rpratrm.rpratrm_term_code = t.TWVACCD_TERM_CODE&#xD;
+                        -- 11-30-2012 Mattie&#xD;
+                        --  AND rpratrm.rpratrm_authorize_amt is not null&#xD;
+                        --  AND rpratrm.rpratrm_offer_amt is not null */&#xD;
+&#xD;
+ LEFT OUTER JOIN TAISMGR.TWVINST on  TWVINST_PIDM = t.TWVACCD_PIDM&#xD;
+                                AND  TWVINST_TERM_CODE = t.TWVACCD_TERM_CODE&#xD;
+ LEFT OUTER JOIN (select distinct twbinvc_pidm Pidm,&#xD;
+                         min(trunc(twbinvc_due_date))  FORMER_due_date&#xD;
+                    from twbinvc&#xD;
+                   where twbinvc_term = :parm_DD_Term.STVTERM_CODE&#xD;
+                     and twbinvc_method = 'Weekly'&#xD;
+                group by twbinvc_pidm&#xD;
+                 )NECC_INST_due_date on NECC_INST_due_date.pidm = t.TWVACCD_PIDM&#xD;
+ LEFT OUTER JOIN (select a.twbinvc_pidm Pidm,&#xD;
+                         count(NVL(a.twbinvc_pidm,0)) BILLING_COUNT&#xD;
+                    from twbinvc a&#xD;
+                   where a.twbinvc_method IN ('Generic')&#xD;
+                     and a.twbinvc_term = :parm_DD_Term.STVTERM_CODE&#xD;
+                   group by twbinvc_pidm ) billing_query on billing_query.PIDM = t.TWVACCD_PIDM&#xD;
+ LEFT OUTER JOIN (select distinct tbr.tbraccd_pidm Pidm,&#xD;
+                         tbr.tbraccd_term_code term_code,&#xD;
+                         'Y' RETC&#xD;
+                    from tbraccd tbr&#xD;
+                   where tbr.tbraccd_detail_code = 'RETC'&#xD;
+                   ) RETC_QUERY on RETC_QUERY.pidm = t.TWVACCD_PIDM&#xD;
+                               and RETC_QUERY.term_code = t.TWVACCD_TERM_CODE&#xD;
+ LEFT OUTER JOIN (select distinct sprhold_pidm Pidm,&#xD;
+                                  sprhold_hldd_code BY_CODE,&#xD;
+                                  max(trunc(sprhold_from_date)) BY_DATE&#xD;
+                    from sprhold&#xD;
+                   where sprhold_hldd_code='BY'&#xD;
+                     and trunc(sprhold_to_date) = to_date('31-DEC-2099', 'DD-MON-YYYY')&#xD;
+                group by sprhold_pidm, sprhold_hldd_code&#xD;
+                 ) by_query on by_query.pidm = t.TWVACCD_PIDM&#xD;
+ LEFT OUTER JOIN (select distinct sprhold_pidm Pidm, 'Y' OTH_HOLDS&#xD;
+                    from sprhold&#xD;
+                   where trunc(sprhold_to_date) = to_date('31-DEC-2099', 'DD-MON-YYYY')&#xD;
+                     and sprhold_hldd_code Like 'B%'&#xD;
+                     and sprhold_hldd_code Not IN ('BY')&#xD;
+                 ) oth_hold_query on oth_hold_query.pidm = t.TWVACCD_PIDM&#xD;
+ --INST&#xD;
+ LEFT OUTER JOIN (SELECT distinct tbr2.tbraccd_pidm pidm,&#xD;
+                                 tbr2.tbraccd_term_code term_code,&#xD;
+                                  'Y' INST&#xD;
+                   from tbraccd tbr2&#xD;
+                  where   tbraccd_detail_code ='INST'&#xD;
+                 )INST_QUERY on INST_QUERY.pidm = t.TWVACCD_PIDM&#xD;
+                            and INST_QUERY.term_code = t.TWVACCD_TERM_CODE&#xD;
+ -- ISIR&#xD;
+ LEFT OUTER JOIN (select distinct r1.rrrareq_pidm pidm,&#xD;
+                         'Y' ISIR,&#xD;
+                         r1.rrrareq_treq_code treq_code&#xD;
+                    from rrrareq r1&#xD;
+                   where r1.rrrareq_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                     and r1.rrrareq_treq_code = 'ISIR'&#xD;
+                 )isir_query on isir_query.pidm = t.TWVACCD_PIDM&#xD;
+ -- FinAid Suspension Appealed&#xD;
+ LEFT OUTER JOIN ( select rrra1.rrrareq_pidm as PIDM,&#xD;
+                           rrra1.rrrareq_aidy_code as AID_YR,&#xD;
+                           rrra1.rrrareq_trst_code as TRST_CODE,&#xD;
+                           rrra1.rrrareq_treq_code as TREQ_CODE&#xD;
+                      from rrrareq rrra1&#xD;
+                      where rrra1.rrrareq_treq_code = 'SAPAP'&#xD;
+                        and rrra1.rrrareq_trst_code in ('N', 'I')&#xD;
+                        and rrra1.rrrareq_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                 )FA_SUSPEND_APPEAL on FA_SUSPEND_APPEAL.pidm = t.TWVACCD_PIDM&#xD;
+ -- FinancialAid Suspension&#xD;
+ LEFT OUTER JOIN ( select rrra2.rrrareq_pidm as PIDM,&#xD;
+                         rrra2.rrrareq_aidy_code as AID_YR,&#xD;
+                         rrra2.rrrareq_trst_code as TRST_CODE,&#xD;
+                         rrra2.rrrareq_treq_code as TREQ_CODE&#xD;
+                    from rrrareq rrra2&#xD;
+                    where rrra2.rrrareq_treq_code = 'FSUSP'&#xD;
+                      and rrra2.rrrareq_trst_code in ('R')&#xD;
+                      and rrra2.rrrareq_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                ) FA_SUSPEND on FA_SUSPEND.pidm = t.TWVACCD_PIDM&#xD;
+ -- EFC&#xD;
+ LEFT OUTER JOIN ( select crap2.rcrapp2_pidm PIDM,&#xD;
+                           crap2.rcrapp2_pell_pgi EFC&#xD;
+                    from RCRAPP2 crap2&#xD;
+                    JOIN RCRAPP1 crap1 on crap1.rcrapp1_pidm = crap2.rcrapp2_pidm&#xD;
+                             and crap1.rcrapp1_aidy_code = crap2.rcrapp2_aidy_code&#xD;
+                             and crap1.rcrapp1_seq_no = crap2.rcrapp2_seq_no&#xD;
+                             and crap1.rcrapp1_infc_code = crap2.rcrapp2_infc_code&#xD;
+                             and crap1.rcrapp1_curr_rec_ind = 'Y'&#xD;
+                             and crap1.rcrapp1_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                ) EFC_QUERY on EFC_QUERY.PIDM = t.TWVACCD_PIDM&#xD;
+ --Bill Credits&#xD;
+ LEFT OUTER JOIN  (select  sfrstcr_pidm Pidm, sfrstcr_term_code term_code,&#xD;
+                          sum(nvl(sfrstcr_credit_hr,0))SUM_CREDITS,&#xD;
+                          sum(nvl(sfrstcr_bill_hr,0)) SUM_BILLABLE&#xD;
+                     from sfrstcr&#xD;
+                 group by sfrstcr_pidm, sfrstcr_term_code&#xD;
+                  ) bill_cred_query  on bill_cred_query.pidm = t.TWVACCD_PIDM&#xD;
+                                     and bill_cred_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+ --Future Credits&#xD;
+ LEFT OUTER JOIN ( select sfrstcr_pidm pidm,&#xD;
+                          sfrstcr_term_code term_code,&#xD;
+                          SUM(NVL(sfrstcr_credit_hr,0)) CREDITS&#xD;
+                     from sfrstcr&#xD;
+                    where sfrstcr_rsts_code IN ('RW', 'RE')&#xD;
+                      -- returns multiple term, hence main query has the distinct&#xD;
+                 group by sfrstcr_pidm, sfrstcr_term_code&#xD;
+               having SUM(NVL(sfrstcr_credit_hr,0)) &amp;gt; 0&#xD;
+                 )Future_Credits on Future_Credits.pidm = t.TWVACCD_PIDM&#xD;
+                                and Future_Credits.term_code &amp;gt; t.TWVACCD_TERM_CODE&#xD;
+ -- Academic With drawl 'NW'. Even one NW.&#xD;
+ LEFT OUTER JOIN ( select sfrstcr_pidm pidm,&#xD;
+                         sfrstcr_term_code term_code,&#xD;
+                          max(sfrstcr_rsts_date) NW_DROP_DATE&#xD;
+                     from sfrstcr&#xD;
+                    where sfrstcr_rsts_code IN ('NW')&#xD;
+                 group by sfrstcr_pidm, sfrstcr_term_code&#xD;
+                 )NW_STUDENT on NW_STUDENT.pidm = t.TWVACCD_PIDM&#xD;
+                                and NW_STUDENT.term_code = t.TWVACCD_TERM_CODE&#xD;
+ -- Student Withdrawal 'W'for all their CRNs&#xD;
+ LEFT OUTER JOIN ( select  sfrstcr_pidm pidm,&#xD;
+                          sfrstcr_term_code term_code,&#xD;
+                          sfrstcr_rsts_code rsts_code,&#xD;
+                          sum(count(*)) over (partition by sfrstcr_pidm) crn_count, --total number of course eg 9 courses&#xD;
+                          count(sfrstcr_rsts_code) w_rsts_count,  -- number of courses for each rsts_code eg 5 out 9 courses with NW&#xD;
+                          max(sfrstcr_rsts_date) Withdrawal_date&#xD;
+                     from sfrstcr&#xD;
+                  group by sfrstcr_pidm, sfrstcr_term_code, sfrstcr_rsts_code&#xD;
+                 )W_STUDENT on W_STUDENT.pidm = t.TWVACCD_PIDM&#xD;
+                                and W_STUDENT.term_code = t.TWVACCD_TERM_CODE&#xD;
+                                and ( W_STUDENT.rsts_code = 'W'&#xD;
+                                      and W_STUDENT.w_rsts_count = W_STUDENT.crn_count)&#xD;
+ --Student Status&#xD;
+ LEFT OUTER JOIN (select distinct s.sgbstdn_pidm Pidm,&#xD;
+                                  s.sgbstdn_styp_code Student_Type, -- Replaces all the New, Returning etc columns 2/14/2013&#xD;
+                                  s.sgbstdn_majr_code_1 MAJOR,&#xD;
+                                  substr(gb_stvmajr.f_get_description(s.sgbstdn_majr_code_1),1,30) MAJOR_DESC,&#xD;
+                                  sgbstdn_majr_code_2,&#xD;
+                                  substr(gb_stvmajr.f_get_description(s.sgbstdn_majr_code_2),1,30) MAJOR_2_DESC&#xD;
+                    from sgbstdn s&#xD;
+                   -- get te most current sgbstdn rec for term ie (max(sgbstdn_term_code_eff))&#xD;
+                   where rowid = f_get_sgbstdn_rowid(sgbstdn_pidm, :parm_DD_Term.STVTERM_CODE)&#xD;
+                 ) major_query on major_query.pidm = t.TWVACCD_PIDM&#xD;
+ -- Earliest Registration Date&#xD;
+  LEFT OUTER JOIN( -- Originally was look at SFRSTCR now looks at SFRSTCA, same query&#xD;
+                  select stca.sfrstca_pidm pidm, stca.sfrstca_term_code term_code,&#xD;
+                        min(trunc(stca.sfrstca_rsts_date)) EARLIEST_REG_DATE&#xD;
+                   from sfrstca stca&#xD;
+                  where stca.sfrstca_source_cde = 'BASE'&#xD;
+                    and stca.sfrstca_rsts_code in ('RE', 'RW')&#xD;
+               group by stca.sfrstca_pidm,stca.sfrstca_term_code&#xD;
+              ) reg_query on reg_query.pidm = t.TWVACCD_PIDM&#xD;
+                             and reg_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+-- Earliest WebReg Date&#xD;
+left outer join ( -- Originally was look at SFRSTCR now looks at SFRSTCA, same query&#xD;
+                 select 'Y' first_web_reg,&#xD;
+                   sa.sfrstca_pidm, sa.sfrstca_term_code,&#xD;
+                   sa.sfrstca_rsts_code, sa.sfrstca_rsts_date&#xD;
+                  from sfrstca sa&#xD;
+                 ) web on  web.sfrstca_pidm = t.TWVACCD_PIDM&#xD;
+                    and web.sfrstca_term_code = t.TWVACCD_TERM_CODE&#xD;
+                    and trunc(web.sfrstca_rsts_date) = reg_query.EARLIEST_REG_DATE&#xD;
+                    and web.sfrstca_rsts_code = 'RW'&#xD;
+&#xD;
+  --Last  Registered&#xD;
+ LEFT OUTER JOIN (  select sr.sfrstcr_pidm pidm,&#xD;
+                           sr.sfrstcr_term_code term_code,&#xD;
+                           max(trunc(sr.sfrstcr_rsts_date)) LastReg_DT&#xD;
+                    from   sfrstcr sr&#xD;
+                   where   sr.sfrstcr_rsts_code in ('RE', 'RW')&#xD;
+                group by sr.sfrstcr_pidm, sr.sfrstcr_term_code&#xD;
+                  ) LastReg_query on LastReg_query.pidm = t.TWVACCD_PIDM&#xD;
+                                   and LastReg_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+-- Last Web Reg&#xD;
+ left outer join (select 'Y' last_web_reg,&#xD;
+                    sl.sfrstcr_pidm, sl.sfrstcr_term_code,&#xD;
+                    sl.sfrstcr_rsts_code, sl.sfrstcr_rsts_date&#xD;
+                from sfrstcr sl&#xD;
+               ) weblast on  weblast.sfrstcr_pidm = t.TWVACCD_PIDM&#xD;
+                  and weblast.sfrstcr_term_code = t.TWVACCD_TERM_CODE&#xD;
+                  and trunc(weblast.sfrstcr_rsts_date) = LastReg_query.LastReg_DT&#xD;
+                  and weblast.sfrstcr_rsts_code = 'RW'&#xD;
+                                   &#xD;
+ --HEALTH_QUERY&#xD;
+ LEFT OUTER JOIN twbhlth on twbhlth_pidm = t.TWVACCD_PIDM &#xD;
+                        and trunc(twbhlth_nchg_date) = to_date('31-DEC-2099', 'DD-MON-YYYY')&#xD;
+                        and twbhlth_fa_proc_yr = :SqlVariable1.AID_YEAR&#xD;
+ /************&#xD;
+ -- Removed as per Joan Scionti 2/14/2013&#xD;
+ --New Student&#xD;
+ -- Returning Student This student was graded in one of&#xD;
+   -- the last two prior terms, and did not graduate in one of these terms.&#xD;
+-- Grad_STUD on Grad_STUD&#xD;
+ --Former*/&#xD;
+&#xD;
+ LEFT OUTER JOIN ( SELECT distinct tbrmemo_pidm pidm,&#xD;
+                          tbrmemo_detail_code,&#xD;
+                          tbrmemo.tbrmemo_user ar_memo_user,&#xD;
+                          tbrmemo.tbrmemo_activity_date memo_activity_date,&#xD;
+                          --tbrmemo.tbrmemo_expiration_date ar_memo_expire,&#xD;
+                           sum(nvl(tbrmemo.tbrmemo_amount, 0) ) tbrmemo_amount&#xD;
+                     from tbrmemo&#xD;
+                    where tbrmemo_term_code = :parm_DD_Term.STVTERM_CODE&#xD;
+                     and  tbrmemo_detail_code in( 'AMS', 'PPMM')&#xD;
+                     and  tbrmemo_srce_code = 'T'&#xD;
+                     and  tbrmemo_expiration_date &amp;gt;= sysdate&#xD;
+                    group by tbrmemo_pidm, tbrmemo_term_code, tbrmemo_detail_code,&#xD;
+                             tbrmemo.tbrmemo_user, tbrmemo.tbrmemo_activity_date&#xD;
+                 )PaymentPlan_AR_memo on PaymentPlan_AR_memo.pidm = t.TWVACCD_PIDM&#xD;
+&#xD;
+ LEFT OUTER JOIN tbrmemo Other_Memos on Other_Memos.Tbrmemo_Pidm= t.TWVACCD_PIDM&#xD;
+                                    and Other_Memos.Tbrmemo_Term_Code = t.TWVACCD_TERM_CODE&#xD;
+                                    and Other_Memos.tbrmemo_detail_code not in( 'AMS', 'PPMM')&#xD;
+&#xD;
+ LEFT OUTER JOIN SATURN.SWVTELE on SWVTELE.SWVTELE_PIDM = t.TWVACCD_PIDM&#xD;
+ /* Not using SPRTELE directly because there difference in the result&#xD;
+     Trying to be consistant with how things were in before this rewrite */&#xD;
+ /*LEFT OUTER JOIN SPRTELE on SPRTELE.SPRTELE_PIDM = t.TWVACCD_PIDM&#xD;
+                 and  SPRTELE.rowid = f_get_address_telephone_rowid&#xD;
+                   (t.TWVACCD_PIDM,'ENRLADDR','A',sysdate,1,'S',null) */&#xD;
+ LEFT OUTER JOIN SPRADDR on SPRADDR.SPRADDR_PIDM = t.TWVACCD_PIDM&#xD;
+                  and  SPRADDR.rowid = f_get_address_rowid&#xD;
+                   (t.TWVACCD_PIDM,'ENRLADDR','A',sysdate,1,'S',null)&#xD;
+&#xD;
+ LEFT OUTER JOIN twbvouc Insurance_Voucher ON Insurance_Voucher.Twbvouc_Pidm = t.TWVACCD_PIDM&#xD;
+                                          and Insurance_Voucher.Twbvouc_Term_Code = t.TWVACCD_TERM_CODE&#xD;
+                                          and Insurance_Voucher.Twbvouc_Nchg_Date = '31-DEC-2099'&#xD;
+                                          and Insurance_Voucher.Twbvouc_Voucher_Code in ('PF','PS')&#xD;
+-- Prior Term Payment&#xD;
+left outer join (&#xD;
+       SELECT distinct prior_accd.tbraccd_pidm as pidm,&#xD;
+              (tbbdetc.tbbdetc_dcat_code || ' - ' || prior_accd.tbraccd_term_code) as pmt,&#xD;
+              prior_accd.tbraccd_term_code,&#xD;
+              max_term.term max_term,&#xD;
+              ( case&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'FA'&#xD;
+                   then 1&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'LNS'&#xD;
+                   then 2&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'TRD'&#xD;
+                   then 3&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'CSH'&#xD;
+                   then 4&#xD;
+                 else   5&#xD;
+                end )  DCAT_rank,&#xD;
+&#xD;
+            min(&#xD;
+                ( case&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'FA'&#xD;
+                   then 1&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'LNS'&#xD;
+                   then 2&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'TRD'&#xD;
+                   then 3&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'CSH'&#xD;
+                   then 4&#xD;
+                 else   5&#xD;
+                end )) over (partition by prior_accd.tbraccd_pidm) as  min_DCAT_rank&#xD;
+&#xD;
+       FROM TBRACCD prior_accd&#xD;
+       join tbbdetc on tbbdetc_detail_code = prior_accd.tbraccd_detail_code&#xD;
+                            and tbbdetc.tbbdetc_dcat_code in ('FA', 'LNS', 'TRD', 'CSH')&#xD;
+&#xD;
+       join (&#xD;
+              select pidm, max(term_code) term from (&#xD;
+                 select distinct x.tbraccd_pidm pidm, max(x.tbraccd_term_code) term_code&#xD;
+                   from tbraccd x&#xD;
+                 join tbbdetc tbbdect1 on tbbdect1.tbbdetc_detail_code = x.tbraccd_detail_code&#xD;
+                            and tbbdect1.tbbdetc_dcat_code in ('FA', 'LNS', 'TRD', 'CSH')&#xD;
+                  where x.tbraccd_term_code &amp;lt; :parm_DD_Term.STVTERM_CODE --use variable&#xD;
+                    and ( substr(x.tbraccd_term_code,5,6) &amp;lt;&amp;gt; '00'&#xD;
+                        and substr(x.tbraccd_term_code,5,6) &amp;lt;&amp;gt; '12')&#xD;
+                 having sum(x.tbraccd_amount) &amp;gt; 0&#xD;
+                 group by x.tbraccd_pidm, x.tbraccd_term_code )&#xD;
+             group by pidm&#xD;
+          ) max_term on max_term.pidm = prior_accd.tbraccd_pidm&#xD;
+          and max_term.term =  prior_accd.tbraccd_term_code&#xD;
+&#xD;
+  ) PRIOR_PMT on prior_pmt.pidm = t.TWVACCD_PIDM&#xD;
+           and ( prior_pmt.DCAT_rank = min_DCAT_RANK&#xD;
+               and prior_pmt.max_term = prior_pmt.tbraccd_term_code )&#xD;
+-- end prior term payment&#xD;
+-- Financial Aid Book Voucher&#xD;
+LEFT OUTER JOIN (  select RWRBOOK_PIDM, RWRBOOK_TERM_CODE, sum(RWRBOOK_AMT) AMT, max(RWRBOOK_ACTIVITY_DATE) MAX_DATE&#xD;
+                      from RWRBOOK&#xD;
+                      group by RWRBOOK_PIDM, RWRBOOK_TERM_CODE) FA_BOOK on RWRBOOK_PIDM =  t.TWVACCD_PIDM&#xD;
+                                                                       and RWRBOOK_TERM_CODE = t.TWVACCD_TERM_CODE&#xD;
+-- end Financial Aid Book Voucher&#xD;
+&#xD;
+where t.TWVACCD_TERM_CODE = :parm_DD_Term.STVTERM_CODE&#xD;
+  and t.TWVACCD_BALANCE &amp;gt; 0&#xD;
+-- order by 1&#xD;
+ORDER BY  TERM, NAME&#xD;
+&lt;/Sql&gt;&#xD;
+ &lt;/query&gt;&#xD;
+ &lt;parameter_queries&gt;&#xD;
+  &lt;parameter_query Columns="&amp;quot;AID_YEAR,,WideString,4&amp;quot;" VariableName="SqlVariable1" Sql="&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;select stvterm_fa_proc_yr Aid_Year&amp;#xA;from stvterm&amp;#xA;where stvterm_code = :parm_DD_Term.STVTERM_CODE&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;"/&gt;&#xD;
+  &lt;parameter_query Columns="&amp;quot;BACK1TERM,,WideString,42&amp;quot;,&amp;quot;BACK2TERMS,,WideString,42&amp;quot;,&amp;quot;BACK3TERMS,,WideString,42&amp;quot;" VariableName="SqlVariable2" Sql="&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;select decode(substr(:parm_DD_Term.STVTERM_CODE,5,2), '01', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) -1) ||'09'),&amp;#xA;                                                   '05', (substr(:parm_DD_Term.STVTERM_CODE,1,4)||'01'),&amp;#xA;                                                   '09',(substr(:parm_DD_Term.STVTERM_CODE,1,4)  || '05')) as Back1Term,&amp;#xA;        decode(substr(:parm_DD_Term.STVTERM_CODE,5,2), '01', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1) ||'05'),&amp;#xA;                                                   '05', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1)||'09'),&amp;#xA;                                                   '09',(substr(:parm_DD_Term.STVTERM_CODE,1,4)  || '01')) as Back2Terms,&amp;#xA;        decode(substr(:parm_DD_Term.STVTERM_CODE,5,2), '01', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1) ||'01'),&amp;#xA;                                                   '05', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1)||'05'),&amp;#xA;                                                   '09',((substr(:parm_DD_Term.STVTERM_CODE,1,4)) -1)  || '09') as Back3Terms&amp;#xA;from dual&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;"/&gt;&#xD;
+ &lt;/parameter_queries&gt;&#xD;
+ &lt;Pictures/&gt;&#xD;
+ &lt;Forms&gt;&#xD;
+  &lt;Form Name="Main"&gt;&#xD;
+   &lt;Font Color="clWindowText" Name="Tahoma" Size="8"/&gt;&#xD;
+   &lt;TabName&gt;Main&lt;/TabName&gt;&#xD;
+   &lt;DpiY&gt;96&lt;/DpiY&gt;&#xD;
+   &lt;DpiX&gt;96&lt;/DpiX&gt;&#xD;
+   &lt;controls&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="Yes" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;27&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;136&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Account Balance By Term - TWRBALN&lt;/Text&gt;&#xD;
+     &lt;Top&gt;34&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label3&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;403&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Right&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;19&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;139&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Select Term:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;194&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label2&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;90&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Right&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;19&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;142&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Balance For:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;162&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label1&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;87&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="Yes" Name="Tahoma" Size="8" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;26&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;137&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;* Takes a long time, please be patient.&#xD;
+&lt;/Text&gt;&#xD;
+     &lt;Top&gt;235&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label4&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;186&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="Yes" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;31&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;24&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Argos&lt;/Text&gt;&#xD;
+     &lt;Top&gt;32&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label5&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;47&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;105&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$DataBlock.Path&lt;/Text&gt;&#xD;
+     &lt;Top&gt;85&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label6&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;79&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;64&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Path:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;85&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label7&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;31&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;104&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$DataBlock.Name&lt;/Text&gt;&#xD;
+     &lt;Top&gt;100&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label8&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;223&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;8&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Datablock Name:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;101&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label9&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;81&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;24&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Report Name:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;117&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label10&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;67&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;104&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$Report.Name&lt;/Text&gt;&#xD;
+     &lt;Top&gt;116&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label11&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;70&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="Yes" Name="Tahoma" Size="8" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;23&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;0&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Datablock modified on:&#xD;
+&lt;/Text&gt;&#xD;
+     &lt;Top&gt;132&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label12&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;109&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="Yes" Name="Tahoma" Size="8" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;119&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$DataBlock.ModifyDate&lt;/Text&gt;&#xD;
+     &lt;Top&gt;132&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label13&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;216&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;104&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$Connection.Driver.DataSource&lt;/Text&gt;&#xD;
+     &lt;Top&gt;72&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label14&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;153&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;40&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Database:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;72&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label15&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;49&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="DropDown"&gt;&#xD;
+     &lt;AutoSelect&gt;No&lt;/AutoSelect&gt;&#xD;
+     &lt;Choices&gt;&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;select STVTERM.STVTERM_CODE,&#xD;
+       STVTERM.STVTERM_DESC&#xD;
+  from SATURN.STVTERM STVTERM&#xD;
+ where STVTERM.STVTERM_DESC &amp;amp;lt;&amp;amp;gt; 'Most Current Term'&#xD;
+   and :parm_DD_Entity.Entity = 'Student'&#xD;
+ order by STVTERM.STVTERM_CODE desc&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;&lt;/Choices&gt;&#xD;
+     &lt;ChooseField&gt;STVTERM_CODE&lt;/ChooseField&gt;&#xD;
+     &lt;Columns&gt;"STVTERM_CODE,,,WideString,0","STVTERM_DESC,,,WideString,0"&lt;/Columns&gt;&#xD;
+     &lt;FreeType&gt;No&lt;/FreeType&gt;&#xD;
+     &lt;Height&gt;22&lt;/Height&gt;&#xD;
+     &lt;Left&gt;239&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Required&gt;No&lt;/Required&gt;&#xD;
+     &lt;ShowField&gt;STVTERM_DESC&lt;/ShowField&gt;&#xD;
+     &lt;SqlEntries&gt;Yes&lt;/SqlEntries&gt;&#xD;
+     &lt;TabOrder&gt;0&lt;/TabOrder&gt;&#xD;
+     &lt;TabStop&gt;Yes&lt;/TabStop&gt;&#xD;
+     &lt;Top&gt;194&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;parm_DD_Term&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;151&lt;/Width&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="DropDown"&gt;&#xD;
+     &lt;AutoSelect&gt;No&lt;/AutoSelect&gt;&#xD;
+     &lt;Choices&gt;&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;Student&#xD;
+Contract&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;&lt;/Choices&gt;&#xD;
+     &lt;ChooseField&gt;Entity&lt;/ChooseField&gt;&#xD;
+     &lt;Columns&gt;"Entity,,,String,0"&lt;/Columns&gt;&#xD;
+     &lt;FreeType&gt;No&lt;/FreeType&gt;&#xD;
+     &lt;Height&gt;22&lt;/Height&gt;&#xD;
+     &lt;Left&gt;239&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Required&gt;Yes&lt;/Required&gt;&#xD;
+     &lt;ShowField&gt;Entity&lt;/ShowField&gt;&#xD;
+     &lt;SqlEntries&gt;No&lt;/SqlEntries&gt;&#xD;
+     &lt;TabOrder&gt;1&lt;/TabOrder&gt;&#xD;
+     &lt;TabStop&gt;Yes&lt;/TabStop&gt;&#xD;
+     &lt;Top&gt;162&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;parm_DD_Entity&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;87&lt;/Width&gt;&#xD;
+    &lt;/control&gt;&#xD;
+   &lt;/controls&gt;&#xD;
+   &lt;Color&gt;clBtnFace&lt;/Color&gt;&#xD;
+  &lt;/Form&gt;&#xD;
+ &lt;/Forms&gt;&#xD;
+ &lt;ExecutionOrder&gt;&lt;/ExecutionOrder&gt;&#xD;
+&lt;/datablock&gt;&#xD;
+</Data>
+      </Revision>
+      <Revision>
+        <Author>mkarthik</Author>
+        <ActivityDate>Tue, 30 Sep 2014 13:06:11 -0400</ActivityDate>
+        <Note>first transaction date for the term</Note>
+        <Active>Yes</Active>
+        <Data>&lt;datablock&gt;&#xD;
+ &lt;information&gt;&#xD;
+  &lt;description&gt;Argos Object File&lt;/description&gt;&#xD;
+  &lt;development&gt;Argos Builder Version 4.3 Build 751&lt;/development&gt;&#xD;
+  &lt;company&gt;Evisions, Inc.&lt;/company&gt;&#xD;
+  &lt;date&gt;Tue, 30 Sep 2014 13:06:11 -0400&lt;/date&gt;&#xD;
+ &lt;/information&gt;&#xD;
+ &lt;query FreeType="True" ExpectRecordSet="True"&gt;&#xD;
+  &lt;ADOOptions/&gt;&#xD;
+  &lt;visible_field Field="PIDM"&gt;&#xD;
+   &lt;DataType&gt;Integer&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TERM"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ID"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LAST"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FIRST"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="NAME"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SSN"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="PRIMARY_MAJOR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MAJOR_DESC_1"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SECONDARY_MAJOR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MAJOR_DESC_2"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ACADEMIC_WITHDRAWAL_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STUDENT_WITHDRAWAL_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="EARLIEST_TRANSACTION_DT"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="EARLIEST_REG_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FIRST_WEB_REG"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LAST_REG_DT"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LAST_WEB_REG"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="HEALTH"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="INSURANCE_VOUCHER"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="INSURANCE_VOUCHER_USER"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FORMER_DUE_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TOUCHNET_DUE_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BALANCE"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BOOK_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BOOK_ACTIVITY"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="NECC_INST_BEFORE_TOUCHNET_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AUTH"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AUTH_DIFF"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AR_MEMO_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MEMO_USER"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="MEMO_ACTIVITY_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TN_INSTALLMENT_PLAN"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="TN_MEMO_AMT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="OTHER_MEMOS"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SUM_CREDITS"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="SUM_BILLABLE"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ISIR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BILLING_COUNT"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="RETC"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BY_CODE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="BY_DATE"&gt;&#xD;
+   &lt;DataType&gt;DBTimeStamp&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="OTH_HOLDS"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STREET1"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STREET2"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="CITY"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STATE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="ZIP"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="AREA"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="PHONE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="LIST_FUT_REG"&gt;&#xD;
+   &lt;DataType&gt;Currency&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="STUDENT_TYPE"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_ISIR"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_EFC"&gt;&#xD;
+   &lt;DataType&gt;BigInt&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_FSUSP"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="FA_SAPAP"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;visible_field Field="PRIOR_PAYMENT"&gt;&#xD;
+   &lt;DataType&gt;VarChar&lt;/DataType&gt;&#xD;
+  &lt;/visible_field&gt;&#xD;
+  &lt;Sql&gt;select distinct t.TWVACCD_PIDM                            PIDM,&#xD;
+       t.TWVACCD_TERM_CODE                                TERM,&#xD;
+       SPRIDEN_ID                                         ID,&#xD;
+       SPRIDEN_LAST_NAME                                  LAST,&#xD;
+       SPRIDEN_FIRST_NAME                                 FIRST,&#xD;
+       SPRIDEN_LAST_NAME || ', ' || SPRIDEN_FIRST_NAME    NAME,&#xD;
+       goksels.f_name_bio_value(t.TWVACCD_PIDM, 'SSN')  SSN,&#xD;
+       major_query.MAJOR                                PRIMARY_MAJOR,&#xD;
+       major_query.MAJOR_DESC                           MAJOR_DESC_1,&#xD;
+       major_query.sgbstdn_majr_code_2                  SECONDARY_MAJOR,&#xD;
+       major_query.MAJOR_2_DESC                         MAJOR_DESC_2,&#xD;
+       NW_Student.NW_DROP_DATE                          Academic_Withdrawal_Date,&#xD;
+       W_STUDENT.Withdrawal_date                        Student_Withdrawal_date,&#xD;
+       first_transact_query.fisrt_transact_date         Earliest_Transaction_DT,&#xD;
+       reg_query.EARLIEST_REG_DATE,&#xD;
+       web.first_web_reg                                FIRST_WEB_REG,&#xD;
+       LastReg_query.LASTREG_DT                         LAST_REG_DT,&#xD;
+       weblast.last_web_reg                             LAST_WEB_REG,&#xD;
+       twbhlth.twbhlth_health_code                      HEALTH,&#xD;
+       Insurance_Voucher.Twbvouc_Voucher_Code           Insurance_Voucher,&#xD;
+       Insurance_Voucher.Twbvouc_User                   Insurance_Voucher_User,&#xD;
+       NECC_INST_due_date.FORMER_due_date,&#xD;
+       TN.Touchnet_DUE_Date,&#xD;
+       t.TWVACCD_BALANCE                                BALANCE,&#xD;
+       FA_BOOK.AMT                                      BOOK_AMT,&#xD;
+       FA_BOOK.MAX_DATE                                 BOOK_ACTIVITY,&#xD;
+       TWVINST_INSTALL_AMOUNT NECC_INST_BEFORE_Touchnet_Amt,&#xD;
+       /*(case&#xD;
+           when rpratrm.rpratrm_pidm is null -- does not exists in rpratrm&#xD;
+             then null&#xD;
+           else t.TWVACCD_FA_MEMO_AUTH_AMT&#xD;
+       end)                                             AUTH,*/&#xD;
+&#xD;
+       decode(t.TWVACCD_FA_MEMO_AUTH_AMT,0, null, t.TWVACCD_FA_MEMO_AUTH_AMT) AUTH,&#xD;
+&#xD;
+       t.TWVACCD_BALANCE_WITH_AIDMEMOS                  AUTH_DIFF,&#xD;
+&#xD;
+         (case&#xD;
+           when PaymentPlan_AR_Memo.pidm is not null&#xD;
+                and PaymentPlan_AR_Memo.tbrmemo_detail_code in ('AMS')&#xD;
+             then PaymentPlan_AR_Memo.tbrmemo_amount&#xD;
+           else null&#xD;
+          end)                                          AR_Memo_Amt, --OnPaymentPlanOrARMemo,&#xD;
+       PaymentPlan_AR_Memo.ar_memo_user                 Memo_User,&#xD;
+       PaymentPlan_AR_Memo.memo_activity_date           Memo_Activity_Date,&#xD;
+       INST_QUERY.INST                                  TN_INSTALLMENT_PLAN, --history of if on TN_PLAN for term&#xD;
+       (case&#xD;
+         when PaymentPlan_AR_Memo.pidm is not null&#xD;
+              and PaymentPlan_AR_Memo.tbrmemo_detail_code in ('PPMM')&#xD;
+           then PaymentPlan_AR_Memo.tbrmemo_amount&#xD;
+         else null&#xD;
+        end)                                            TN_MEMO_AMT, --Touchnet_Plan_Amount, &#xD;
+       (case&#xD;
+         when Other_Memos.Tbrmemo_Pidm is not null&#xD;
+           then 'Y'&#xD;
+         else NULL&#xD;
+        end)                                            Other_Memos,&#xD;
+&#xD;
+       SUM_CREDITS,&#xD;
+       SUM_BILLABLE,&#xD;
+       ISIR,&#xD;
+       BILLING_COUNT,&#xD;
+       RETC_QUERY.RETC                                  RETC,&#xD;
+       BY_CODE,&#xD;
+       BY_DATE,&#xD;
+       OTH_HOLDS,&#xD;
+&#xD;
+       SPRADDR.SPRADDR_STREET_LINE1                     STREET1,&#xD;
+       SPRADDR.SPRADDR_STREET_LINE2                     STREET2,&#xD;
+       SPRADDR.SPRADDR_CITY                             CITY,&#xD;
+       SPRADDR.SPRADDR_STAT_CODE                        STATE,&#xD;
+       SPRADDR.SPRADDR_ZIP                              ZIP,&#xD;
+       SWVTELE_PHONE_AREA                               AREA,&#xD;
+       SWVTELE_PHONE_NUMBER                             PHONE,&#xD;
+       --nvl(substr(SPRTELE_PHONE_NUMBER , 1,3), '')|| nvl(substr(SPRTELE_PHONE_NUMBER, 4,7), '') Phone,&#xD;
+       Future_Credits.CREDITS                           LIST_FUT_REG,&#xD;
+       MAJOR_QUERY.Student_Type                         STUDENT_TYPE,&#xD;
+      /* -- Removed as per Joan Scionti 2/14/2013, Replace by Student_Type&#xD;
+       NEW_STUDENT,&#xD;
+       RETURNING_STUDENT,&#xD;
+       RETURNING_GRAD_STUDENT,&#xD;
+       FORMER_STUDENT,&#xD;
+      */&#xD;
+       ISIR_QUERY.treq_code                             FA_ISIR,&#xD;
+       EFC_QUERY.EFC                                    FA_EFC,&#xD;
+       FA_SUSPEND.TREQ_CODE                             FA_FSUSP,&#xD;
+       FA_SUSPEND_APPEAL.TREQ_CODE                      FA_SAPAP,&#xD;
+       PRIOR_PMT.PMT                                    PRIOR_PAYMENT&#xD;
+&#xD;
+from necc.twvaccd t&#xD;
+  JOIN SPRIDEN on SPRIDEN_PIDM = t.TWVACCD_PIDM&#xD;
+               AND SPRIDEN_CHANGE_IND IS NULL&#xD;
+               AND (  (:parm_DD_Entity.Entity = 'Student'&#xD;
+                       and spriden_entity_ind = 'P'&#xD;
+                       AND t.TWVACCD_TERM_CODE = :parm_DD_Term.STVTERM_CODE&#xD;
+                      )&#xD;
+                    OR ( :parm_DD_Entity.Entity = 'Contract'&#xD;
+                         and spriden_entity_ind = 'C'&#xD;
+                         AND t.TWVACCD_TERM_CODE like ('%')&#xD;
+                       )&#xD;
+                   ) -- This drives who is displayed, the main where clause&#xD;
+  /* JOIN  (select TN.tbraccd_pidm pidm, TN.tbraccd_term_code term_code,&#xD;
+               (case&#xD;
+                   when TN.TBRACCD_TERM_CODE &amp;lt; '201201' --HardCoded, this is when touchnet went live&#xD;
+                     then NULL&#xD;
+                   else   max(TN.TBRACCD_DUE_DATE)&#xD;
+                  end ) Touchnet_DUE_Date&#xD;
+           from tbraccd TN&#xD;
+           group by TN.tbraccd_pidm, TN.tbraccd_term_code ) accd on accd.pidm = t.TWVACCD_PIDM&#xD;
+                              and accd.term_code = t.TWVACCD_TERM_CODE */&#xD;
+/*   TouchNet Due Date location has changed&#xD;
+  -- Mattie 1/7/2013&#xD;
+*/&#xD;
+ LEFT OUTER JOIN  (&#xD;
+          select TN.TBBSTMT_PIDM pidm, TN.TBBSTMT_TERM_CODE term_code,&#xD;
+               (case&#xD;
+                   when TN.TBBSTMT_TERM_CODE &amp;lt; '201201' --HardCoded, this is when touchnet went live&#xD;
+                     then NULL&#xD;
+                   else   max(TN.TBBSTMT_DUE_DATE)&#xD;
+                  end ) Touchnet_DUE_Date&#xD;
+          from TBBSTMT TN&#xD;
+          group by TN.TBBSTMT_PIDM, TN.TBBSTMT_TERM_CODE  ) TN on TN.pidm = t.TWVACCD_PIDM&#xD;
+                              and TN.term_code = t.TWVACCD_TERM_CODE&#xD;
+ /*-- Check to see if student has exists in rpratrm.&#xD;
+     -- if yes then use TWVACCD to show the $amt else null&#xD;
+ LEFT OUTER JOIN RPRATRM on rpratrm.rpratrm_pidm = t.TWVACCD_PIDM&#xD;
+                        AND rpratrm.rpratrm_term_code = t.TWVACCD_TERM_CODE&#xD;
+                        -- 11-30-2012 Mattie&#xD;
+                        --  AND rpratrm.rpratrm_authorize_amt is not null&#xD;
+                        --  AND rpratrm.rpratrm_offer_amt is not null */&#xD;
+&#xD;
+ LEFT OUTER JOIN TAISMGR.TWVINST on  TWVINST_PIDM = t.TWVACCD_PIDM&#xD;
+                                AND  TWVINST_TERM_CODE = t.TWVACCD_TERM_CODE&#xD;
+ LEFT OUTER JOIN (select distinct twbinvc_pidm Pidm,&#xD;
+                         min(trunc(twbinvc_due_date))  FORMER_due_date&#xD;
+                    from twbinvc&#xD;
+                   where twbinvc_term = :parm_DD_Term.STVTERM_CODE&#xD;
+                     and twbinvc_method = 'Weekly'&#xD;
+                group by twbinvc_pidm&#xD;
+                 )NECC_INST_due_date on NECC_INST_due_date.pidm = t.TWVACCD_PIDM&#xD;
+ LEFT OUTER JOIN (select a.twbinvc_pidm Pidm,&#xD;
+                         count(NVL(a.twbinvc_pidm,0)) BILLING_COUNT&#xD;
+                    from twbinvc a&#xD;
+                   where a.twbinvc_method IN ('Generic')&#xD;
+                     and a.twbinvc_term = :parm_DD_Term.STVTERM_CODE&#xD;
+                   group by twbinvc_pidm ) billing_query on billing_query.PIDM = t.TWVACCD_PIDM&#xD;
+ LEFT OUTER JOIN (select distinct tbr.tbraccd_pidm Pidm,&#xD;
+                         tbr.tbraccd_term_code term_code,&#xD;
+                         'Y' RETC&#xD;
+                    from tbraccd tbr&#xD;
+                   where tbr.tbraccd_detail_code = 'RETC'&#xD;
+                   ) RETC_QUERY on RETC_QUERY.pidm = t.TWVACCD_PIDM&#xD;
+                               and RETC_QUERY.term_code = t.TWVACCD_TERM_CODE&#xD;
+ LEFT OUTER JOIN (select distinct sprhold_pidm Pidm,&#xD;
+                                  sprhold_hldd_code BY_CODE,&#xD;
+                                  max(trunc(sprhold_from_date)) BY_DATE&#xD;
+                    from sprhold&#xD;
+                   where sprhold_hldd_code='BY'&#xD;
+                     and trunc(sprhold_to_date) = to_date('31-DEC-2099', 'DD-MON-YYYY')&#xD;
+                group by sprhold_pidm, sprhold_hldd_code&#xD;
+                 ) by_query on by_query.pidm = t.TWVACCD_PIDM&#xD;
+ LEFT OUTER JOIN (select distinct sprhold_pidm Pidm, 'Y' OTH_HOLDS&#xD;
+                    from sprhold&#xD;
+                   where trunc(sprhold_to_date) = to_date('31-DEC-2099', 'DD-MON-YYYY')&#xD;
+                     and sprhold_hldd_code Like 'B%'&#xD;
+                     and sprhold_hldd_code Not IN ('BY')&#xD;
+                 ) oth_hold_query on oth_hold_query.pidm = t.TWVACCD_PIDM&#xD;
+ --INST&#xD;
+ LEFT OUTER JOIN (SELECT distinct tbr2.tbraccd_pidm pidm,&#xD;
+                                 tbr2.tbraccd_term_code term_code,&#xD;
+                                  'Y' INST&#xD;
+                   from tbraccd tbr2&#xD;
+                  where   tbraccd_detail_code ='INST'&#xD;
+                 )INST_QUERY on INST_QUERY.pidm = t.TWVACCD_PIDM&#xD;
+                            and INST_QUERY.term_code = t.TWVACCD_TERM_CODE&#xD;
+ -- ISIR&#xD;
+ LEFT OUTER JOIN (select distinct r1.rrrareq_pidm pidm,&#xD;
+                         'Y' ISIR,&#xD;
+                         r1.rrrareq_treq_code treq_code&#xD;
+                    from rrrareq r1&#xD;
+                   where r1.rrrareq_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                     and r1.rrrareq_treq_code = 'ISIR'&#xD;
+                 )isir_query on isir_query.pidm = t.TWVACCD_PIDM&#xD;
+ -- FinAid Suspension Appealed&#xD;
+ LEFT OUTER JOIN ( select rrra1.rrrareq_pidm as PIDM,&#xD;
+                           rrra1.rrrareq_aidy_code as AID_YR,&#xD;
+                           rrra1.rrrareq_trst_code as TRST_CODE,&#xD;
+                           rrra1.rrrareq_treq_code as TREQ_CODE&#xD;
+                      from rrrareq rrra1&#xD;
+                      where rrra1.rrrareq_treq_code = 'SAPAP'&#xD;
+                        and rrra1.rrrareq_trst_code in ('N', 'I')&#xD;
+                        and rrra1.rrrareq_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                 )FA_SUSPEND_APPEAL on FA_SUSPEND_APPEAL.pidm = t.TWVACCD_PIDM&#xD;
+ -- FinancialAid Suspension&#xD;
+ LEFT OUTER JOIN ( select rrra2.rrrareq_pidm as PIDM,&#xD;
+                         rrra2.rrrareq_aidy_code as AID_YR,&#xD;
+                         rrra2.rrrareq_trst_code as TRST_CODE,&#xD;
+                         rrra2.rrrareq_treq_code as TREQ_CODE&#xD;
+                    from rrrareq rrra2&#xD;
+                    where rrra2.rrrareq_treq_code = 'FSUSP'&#xD;
+                      and rrra2.rrrareq_trst_code in ('R')&#xD;
+                      and rrra2.rrrareq_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                ) FA_SUSPEND on FA_SUSPEND.pidm = t.TWVACCD_PIDM&#xD;
+ -- EFC&#xD;
+ LEFT OUTER JOIN ( select crap2.rcrapp2_pidm PIDM,&#xD;
+                           crap2.rcrapp2_pell_pgi EFC&#xD;
+                    from RCRAPP2 crap2&#xD;
+                    JOIN RCRAPP1 crap1 on crap1.rcrapp1_pidm = crap2.rcrapp2_pidm&#xD;
+                             and crap1.rcrapp1_aidy_code = crap2.rcrapp2_aidy_code&#xD;
+                             and crap1.rcrapp1_seq_no = crap2.rcrapp2_seq_no&#xD;
+                             and crap1.rcrapp1_infc_code = crap2.rcrapp2_infc_code&#xD;
+                             and crap1.rcrapp1_curr_rec_ind = 'Y'&#xD;
+                             and crap1.rcrapp1_aidy_code = :SqlVariable1.AID_YEAR&#xD;
+                ) EFC_QUERY on EFC_QUERY.PIDM = t.TWVACCD_PIDM&#xD;
+ --Bill Credits&#xD;
+ LEFT OUTER JOIN  (select  sfrstcr_pidm Pidm, sfrstcr_term_code term_code,&#xD;
+                          sum(nvl(sfrstcr_credit_hr,0))SUM_CREDITS,&#xD;
+                          sum(nvl(sfrstcr_bill_hr,0)) SUM_BILLABLE&#xD;
+                     from sfrstcr&#xD;
+                 group by sfrstcr_pidm, sfrstcr_term_code&#xD;
+                  ) bill_cred_query  on bill_cred_query.pidm = t.TWVACCD_PIDM&#xD;
+                                     and bill_cred_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+ --Future Credits&#xD;
+ LEFT OUTER JOIN ( select sfrstcr_pidm pidm,&#xD;
+                          sfrstcr_term_code term_code,&#xD;
+                          SUM(NVL(sfrstcr_credit_hr,0)) CREDITS&#xD;
+                     from sfrstcr&#xD;
+                    where sfrstcr_rsts_code IN ('RW', 'RE')&#xD;
+                      -- returns multiple term, hence main query has the distinct&#xD;
+                 group by sfrstcr_pidm, sfrstcr_term_code&#xD;
+               having SUM(NVL(sfrstcr_credit_hr,0)) &amp;gt; 0&#xD;
+                 )Future_Credits on Future_Credits.pidm = t.TWVACCD_PIDM&#xD;
+                                and Future_Credits.term_code &amp;gt; t.TWVACCD_TERM_CODE&#xD;
+ -- Academic With drawl 'NW'. Even one NW.&#xD;
+ LEFT OUTER JOIN ( select sfrstcr_pidm pidm,&#xD;
+                         sfrstcr_term_code term_code,&#xD;
+                          max(sfrstcr_rsts_date) NW_DROP_DATE&#xD;
+                     from sfrstcr&#xD;
+                    where sfrstcr_rsts_code IN ('NW')&#xD;
+                 group by sfrstcr_pidm, sfrstcr_term_code&#xD;
+                 )NW_STUDENT on NW_STUDENT.pidm = t.TWVACCD_PIDM&#xD;
+                                and NW_STUDENT.term_code = t.TWVACCD_TERM_CODE&#xD;
+ -- Student Withdrawal 'W'for all their CRNs&#xD;
+ LEFT OUTER JOIN ( select  sfrstcr_pidm pidm,&#xD;
+                          sfrstcr_term_code term_code,&#xD;
+                          sfrstcr_rsts_code rsts_code,&#xD;
+                          sum(count(*)) over (partition by sfrstcr_pidm) crn_count, --total number of course eg 9 courses&#xD;
+                          count(sfrstcr_rsts_code) w_rsts_count,  -- number of courses for each rsts_code eg 5 out 9 courses with NW&#xD;
+                          max(sfrstcr_rsts_date) Withdrawal_date&#xD;
+                     from sfrstcr&#xD;
+                  group by sfrstcr_pidm, sfrstcr_term_code, sfrstcr_rsts_code&#xD;
+                 )W_STUDENT on W_STUDENT.pidm = t.TWVACCD_PIDM&#xD;
+                                and W_STUDENT.term_code = t.TWVACCD_TERM_CODE&#xD;
+                                and ( W_STUDENT.rsts_code = 'W'&#xD;
+                                      and W_STUDENT.w_rsts_count = W_STUDENT.crn_count)&#xD;
+ --Student Status&#xD;
+ LEFT OUTER JOIN (select distinct s.sgbstdn_pidm Pidm,&#xD;
+                                  s.sgbstdn_styp_code Student_Type, -- Replaces all the New, Returning etc columns 2/14/2013&#xD;
+                                  s.sgbstdn_majr_code_1 MAJOR,&#xD;
+                                  substr(gb_stvmajr.f_get_description(s.sgbstdn_majr_code_1),1,30) MAJOR_DESC,&#xD;
+                                  sgbstdn_majr_code_2,&#xD;
+                                  substr(gb_stvmajr.f_get_description(s.sgbstdn_majr_code_2),1,30) MAJOR_2_DESC&#xD;
+                    from sgbstdn s&#xD;
+                   -- get te most current sgbstdn rec for term ie (max(sgbstdn_term_code_eff))&#xD;
+                   where rowid = f_get_sgbstdn_rowid(sgbstdn_pidm, :parm_DD_Term.STVTERM_CODE)&#xD;
+                 ) major_query on major_query.pidm = t.TWVACCD_PIDM&#xD;
+ --First/Earliest AR Transaction&#xD;
+ LEFT OUTER JOIN (select tb.tbraccd_pidm pidm, tb.tbraccd_term_code term_code,&#xD;
+                         min(tb.tbraccd_effective_date) fisrt_transact_date&#xD;
+                  from TBRACCD tb&#xD;
+                  group by tb.tbraccd_pidm, tb.tbraccd_term_code ) first_transact_query on first_transact_query.pidm = t.TWVACCD_PIDM&#xD;
+                             and first_transact_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+&#xD;
+ -- Earliest Registration Date&#xD;
+  LEFT OUTER JOIN( -- Originally was look at SFRSTCR now looks at SFRSTCA, same query&#xD;
+                  select stca.sfrstca_pidm pidm, stca.sfrstca_term_code term_code,&#xD;
+                        min(trunc(stca.sfrstca_rsts_date)) EARLIEST_REG_DATE&#xD;
+                   from sfrstca stca&#xD;
+                  where stca.sfrstca_source_cde = 'BASE'&#xD;
+                    and stca.sfrstca_rsts_code in ('RE', 'RW')&#xD;
+               group by stca.sfrstca_pidm,stca.sfrstca_term_code&#xD;
+              ) reg_query on reg_query.pidm = t.TWVACCD_PIDM&#xD;
+                             and reg_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+-- Earliest WebReg Date&#xD;
+left outer join ( -- Originally was look at SFRSTCR now looks at SFRSTCA, same query&#xD;
+                 select 'Y' first_web_reg,&#xD;
+                   sa.sfrstca_pidm, sa.sfrstca_term_code,&#xD;
+                   sa.sfrstca_rsts_code, sa.sfrstca_rsts_date&#xD;
+                  from sfrstca sa&#xD;
+                 ) web on  web.sfrstca_pidm = t.TWVACCD_PIDM&#xD;
+                    and web.sfrstca_term_code = t.TWVACCD_TERM_CODE&#xD;
+                    and trunc(web.sfrstca_rsts_date) = reg_query.EARLIEST_REG_DATE&#xD;
+                    and web.sfrstca_rsts_code = 'RW'&#xD;
+&#xD;
+  --Last  Registered&#xD;
+ LEFT OUTER JOIN (  select sr.sfrstcr_pidm pidm,&#xD;
+                           sr.sfrstcr_term_code term_code,&#xD;
+                           max(trunc(sr.sfrstcr_rsts_date)) LastReg_DT&#xD;
+                    from   sfrstcr sr&#xD;
+                   where   sr.sfrstcr_rsts_code in ('RE', 'RW')&#xD;
+                group by sr.sfrstcr_pidm, sr.sfrstcr_term_code&#xD;
+                  ) LastReg_query on LastReg_query.pidm = t.TWVACCD_PIDM&#xD;
+                                   and LastReg_query.term_code = t.TWVACCD_TERM_CODE&#xD;
+-- Last Web Reg&#xD;
+ left outer join (select 'Y' last_web_reg,&#xD;
+                    sl.sfrstcr_pidm, sl.sfrstcr_term_code,&#xD;
+                    sl.sfrstcr_rsts_code, sl.sfrstcr_rsts_date&#xD;
+                from sfrstcr sl&#xD;
+               ) weblast on  weblast.sfrstcr_pidm = t.TWVACCD_PIDM&#xD;
+                  and weblast.sfrstcr_term_code = t.TWVACCD_TERM_CODE&#xD;
+                  and trunc(weblast.sfrstcr_rsts_date) = LastReg_query.LastReg_DT&#xD;
+                  and weblast.sfrstcr_rsts_code = 'RW'&#xD;
+                                   &#xD;
+ --HEALTH_QUERY&#xD;
+ LEFT OUTER JOIN twbhlth on twbhlth_pidm = t.TWVACCD_PIDM &#xD;
+                        and trunc(twbhlth_nchg_date) = to_date('31-DEC-2099', 'DD-MON-YYYY')&#xD;
+                        and twbhlth_fa_proc_yr = :SqlVariable1.AID_YEAR&#xD;
+ /************&#xD;
+ -- Removed as per Joan Scionti 2/14/2013&#xD;
+ --New Student&#xD;
+ -- Returning Student This student was graded in one of&#xD;
+   -- the last two prior terms, and did not graduate in one of these terms.&#xD;
+-- Grad_STUD on Grad_STUD&#xD;
+ --Former*/&#xD;
+&#xD;
+ LEFT OUTER JOIN ( SELECT distinct tbrmemo_pidm pidm,&#xD;
+                          tbrmemo_detail_code,&#xD;
+                          tbrmemo.tbrmemo_user ar_memo_user,&#xD;
+                          tbrmemo.tbrmemo_activity_date memo_activity_date,&#xD;
+                          --tbrmemo.tbrmemo_expiration_date ar_memo_expire,&#xD;
+                           sum(nvl(tbrmemo.tbrmemo_amount, 0) ) tbrmemo_amount&#xD;
+                     from tbrmemo&#xD;
+                    where tbrmemo_term_code = :parm_DD_Term.STVTERM_CODE&#xD;
+                     and  tbrmemo_detail_code in( 'AMS', 'PPMM')&#xD;
+                     and  tbrmemo_srce_code = 'T'&#xD;
+                     and  tbrmemo_expiration_date &amp;gt;= sysdate&#xD;
+                    group by tbrmemo_pidm, tbrmemo_term_code, tbrmemo_detail_code,&#xD;
+                             tbrmemo.tbrmemo_user, tbrmemo.tbrmemo_activity_date&#xD;
+                 )PaymentPlan_AR_memo on PaymentPlan_AR_memo.pidm = t.TWVACCD_PIDM&#xD;
+&#xD;
+ LEFT OUTER JOIN tbrmemo Other_Memos on Other_Memos.Tbrmemo_Pidm= t.TWVACCD_PIDM&#xD;
+                                    and Other_Memos.Tbrmemo_Term_Code = t.TWVACCD_TERM_CODE&#xD;
+                                    and Other_Memos.tbrmemo_detail_code not in( 'AMS', 'PPMM')&#xD;
+&#xD;
+ LEFT OUTER JOIN SATURN.SWVTELE on SWVTELE.SWVTELE_PIDM = t.TWVACCD_PIDM&#xD;
+ /* Not using SPRTELE directly because there difference in the result&#xD;
+     Trying to be consistant with how things were in before this rewrite */&#xD;
+ /*LEFT OUTER JOIN SPRTELE on SPRTELE.SPRTELE_PIDM = t.TWVACCD_PIDM&#xD;
+                 and  SPRTELE.rowid = f_get_address_telephone_rowid&#xD;
+                   (t.TWVACCD_PIDM,'ENRLADDR','A',sysdate,1,'S',null) */&#xD;
+ LEFT OUTER JOIN SPRADDR on SPRADDR.SPRADDR_PIDM = t.TWVACCD_PIDM&#xD;
+                  and  SPRADDR.rowid = f_get_address_rowid&#xD;
+                   (t.TWVACCD_PIDM,'ENRLADDR','A',sysdate,1,'S',null)&#xD;
+&#xD;
+ LEFT OUTER JOIN twbvouc Insurance_Voucher ON Insurance_Voucher.Twbvouc_Pidm = t.TWVACCD_PIDM&#xD;
+                                          and Insurance_Voucher.Twbvouc_Term_Code = t.TWVACCD_TERM_CODE&#xD;
+                                          and Insurance_Voucher.Twbvouc_Nchg_Date = '31-DEC-2099'&#xD;
+                                          and Insurance_Voucher.Twbvouc_Voucher_Code in ('PF','PS')&#xD;
+-- Prior Term Payment&#xD;
+left outer join (&#xD;
+       SELECT distinct prior_accd.tbraccd_pidm as pidm,&#xD;
+              (tbbdetc.tbbdetc_dcat_code || ' - ' || prior_accd.tbraccd_term_code) as pmt,&#xD;
+              prior_accd.tbraccd_term_code,&#xD;
+              max_term.term max_term,&#xD;
+              ( case&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'FA'&#xD;
+                   then 1&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'LNS'&#xD;
+                   then 2&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'TRD'&#xD;
+                   then 3&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'CSH'&#xD;
+                   then 4&#xD;
+                 else   5&#xD;
+                end )  DCAT_rank,&#xD;
+&#xD;
+            min(&#xD;
+                ( case&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'FA'&#xD;
+                   then 1&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'LNS'&#xD;
+                   then 2&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'TRD'&#xD;
+                   then 3&#xD;
+                 when tbbdetc.tbbdetc_dcat_code = 'CSH'&#xD;
+                   then 4&#xD;
+                 else   5&#xD;
+                end )) over (partition by prior_accd.tbraccd_pidm) as  min_DCAT_rank&#xD;
+&#xD;
+       FROM TBRACCD prior_accd&#xD;
+       join tbbdetc on tbbdetc_detail_code = prior_accd.tbraccd_detail_code&#xD;
+                            and tbbdetc.tbbdetc_dcat_code in ('FA', 'LNS', 'TRD', 'CSH')&#xD;
+&#xD;
+       join (&#xD;
+              select pidm, max(term_code) term from (&#xD;
+                 select distinct x.tbraccd_pidm pidm, max(x.tbraccd_term_code) term_code&#xD;
+                   from tbraccd x&#xD;
+                 join tbbdetc tbbdect1 on tbbdect1.tbbdetc_detail_code = x.tbraccd_detail_code&#xD;
+                            and tbbdect1.tbbdetc_dcat_code in ('FA', 'LNS', 'TRD', 'CSH')&#xD;
+                  where x.tbraccd_term_code &amp;lt; :parm_DD_Term.STVTERM_CODE --use variable&#xD;
+                    and ( substr(x.tbraccd_term_code,5,6) &amp;lt;&amp;gt; '00'&#xD;
+                        and substr(x.tbraccd_term_code,5,6) &amp;lt;&amp;gt; '12')&#xD;
+                 having sum(x.tbraccd_amount) &amp;gt; 0&#xD;
+                 group by x.tbraccd_pidm, x.tbraccd_term_code )&#xD;
+             group by pidm&#xD;
+          ) max_term on max_term.pidm = prior_accd.tbraccd_pidm&#xD;
+          and max_term.term =  prior_accd.tbraccd_term_code&#xD;
+&#xD;
+  ) PRIOR_PMT on prior_pmt.pidm = t.TWVACCD_PIDM&#xD;
+           and ( prior_pmt.DCAT_rank = min_DCAT_RANK&#xD;
+               and prior_pmt.max_term = prior_pmt.tbraccd_term_code )&#xD;
+-- end prior term payment&#xD;
+-- Financial Aid Book Voucher&#xD;
+LEFT OUTER JOIN (  select RWRBOOK_PIDM, RWRBOOK_TERM_CODE, sum(RWRBOOK_AMT) AMT, max(RWRBOOK_ACTIVITY_DATE) MAX_DATE&#xD;
+                      from RWRBOOK&#xD;
+                      group by RWRBOOK_PIDM, RWRBOOK_TERM_CODE) FA_BOOK on RWRBOOK_PIDM =  t.TWVACCD_PIDM&#xD;
+                                                                       and RWRBOOK_TERM_CODE = t.TWVACCD_TERM_CODE&#xD;
+-- end Financial Aid Book Voucher&#xD;
+&#xD;
+where t.TWVACCD_TERM_CODE = :parm_DD_Term.STVTERM_CODE&#xD;
+  and t.TWVACCD_BALANCE &amp;gt; 0&#xD;
+-- order by 1&#xD;
+ORDER BY  TERM, NAME&#xD;
+&lt;/Sql&gt;&#xD;
+ &lt;/query&gt;&#xD;
+ &lt;parameter_queries&gt;&#xD;
+  &lt;parameter_query Columns="&amp;quot;AID_YEAR,,WideString,4&amp;quot;" VariableName="SqlVariable1" Sql="&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;select stvterm_fa_proc_yr Aid_Year&amp;#xA;from stvterm&amp;#xA;where stvterm_code = :parm_DD_Term.STVTERM_CODE&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;"/&gt;&#xD;
+  &lt;parameter_query Columns="&amp;quot;BACK1TERM,,WideString,42&amp;quot;,&amp;quot;BACK2TERMS,,WideString,42&amp;quot;,&amp;quot;BACK3TERMS,,WideString,42&amp;quot;" VariableName="SqlVariable2" Sql="&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;select decode(substr(:parm_DD_Term.STVTERM_CODE,5,2), '01', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) -1) ||'09'),&amp;#xA;                                                   '05', (substr(:parm_DD_Term.STVTERM_CODE,1,4)||'01'),&amp;#xA;                                                   '09',(substr(:parm_DD_Term.STVTERM_CODE,1,4)  || '05')) as Back1Term,&amp;#xA;        decode(substr(:parm_DD_Term.STVTERM_CODE,5,2), '01', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1) ||'05'),&amp;#xA;                                                   '05', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1)||'09'),&amp;#xA;                                                   '09',(substr(:parm_DD_Term.STVTERM_CODE,1,4)  || '01')) as Back2Terms,&amp;#xA;        decode(substr(:parm_DD_Term.STVTERM_CODE,5,2), '01', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1) ||'01'),&amp;#xA;                                                   '05', ((substr(:parm_DD_Term.STVTERM_CODE,1,4) - 1)||'05'),&amp;#xA;                                                   '09',((substr(:parm_DD_Term.STVTERM_CODE,1,4)) -1)  || '09') as Back3Terms&amp;#xA;from dual&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;"/&gt;&#xD;
+ &lt;/parameter_queries&gt;&#xD;
+ &lt;Pictures/&gt;&#xD;
+ &lt;Forms&gt;&#xD;
+  &lt;Form Name="Main"&gt;&#xD;
+   &lt;Font Color="clWindowText" Name="Tahoma" Size="8"/&gt;&#xD;
+   &lt;TabName&gt;Main&lt;/TabName&gt;&#xD;
+   &lt;DpiY&gt;96&lt;/DpiY&gt;&#xD;
+   &lt;DpiX&gt;96&lt;/DpiX&gt;&#xD;
+   &lt;controls&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="Yes" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;27&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;136&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Account Balance By Term - TWRBALN&lt;/Text&gt;&#xD;
+     &lt;Top&gt;34&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label3&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;403&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Right&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;19&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;139&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Select Term:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;194&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label2&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;90&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Right&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;19&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;142&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Balance For:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;162&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label1&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;87&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="Yes" Name="Tahoma" Size="8" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;26&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;137&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;* Takes a long time, please be patient.&#xD;
+&lt;/Text&gt;&#xD;
+     &lt;Top&gt;235&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label4&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;186&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="Yes" Color="clWindowText" Italics="No" Name="Tahoma" Size="12" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;31&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;24&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Argos&lt;/Text&gt;&#xD;
+     &lt;Top&gt;32&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label5&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;47&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;105&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$DataBlock.Path&lt;/Text&gt;&#xD;
+     &lt;Top&gt;85&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label6&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;79&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;64&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Path:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;85&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label7&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;31&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;104&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$DataBlock.Name&lt;/Text&gt;&#xD;
+     &lt;Top&gt;100&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label8&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;223&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;8&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Datablock Name:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;101&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label9&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;81&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;24&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Report Name:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;117&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label10&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;67&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;104&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$Report.Name&lt;/Text&gt;&#xD;
+     &lt;Top&gt;116&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label11&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;70&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="Yes" Name="Tahoma" Size="8" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;23&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;0&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Datablock modified on:&#xD;
+&lt;/Text&gt;&#xD;
+     &lt;Top&gt;132&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label12&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;109&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Font Bold="No" Color="clWindowText" Italics="Yes" Name="Tahoma" Size="8" Underline="No"&gt;&lt;/Font&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;119&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;No&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$DataBlock.ModifyDate&lt;/Text&gt;&#xD;
+     &lt;Top&gt;132&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label13&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;216&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;Yes&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;104&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;$Connection.Driver.DataSource&lt;/Text&gt;&#xD;
+     &lt;Top&gt;72&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label14&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;153&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="Label"&gt;&#xD;
+     &lt;Align&gt;None&lt;/Align&gt;&#xD;
+     &lt;Alignment&gt;Left&lt;/Alignment&gt;&#xD;
+     &lt;AutoSize&gt;Yes&lt;/AutoSize&gt;&#xD;
+     &lt;DataAware&gt;No&lt;/DataAware&gt;&#xD;
+     &lt;Height&gt;13&lt;/Height&gt;&#xD;
+     &lt;Layout&gt;Top&lt;/Layout&gt;&#xD;
+     &lt;Left&gt;40&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Text&gt;Database:&lt;/Text&gt;&#xD;
+     &lt;Top&gt;72&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;Label15&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;49&lt;/Width&gt;&#xD;
+     &lt;WordWrap&gt;No&lt;/WordWrap&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="DropDown"&gt;&#xD;
+     &lt;AutoSelect&gt;No&lt;/AutoSelect&gt;&#xD;
+     &lt;Choices&gt;&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;select STVTERM.STVTERM_CODE,&#xD;
+       STVTERM.STVTERM_DESC&#xD;
+  from SATURN.STVTERM STVTERM&#xD;
+ where STVTERM.STVTERM_DESC &amp;amp;lt;&amp;amp;gt; 'Most Current Term'&#xD;
+   and :parm_DD_Entity.Entity = 'Student'&#xD;
+ order by STVTERM.STVTERM_CODE desc&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;&lt;/Choices&gt;&#xD;
+     &lt;ChooseField&gt;STVTERM_CODE&lt;/ChooseField&gt;&#xD;
+     &lt;Columns&gt;"STVTERM_CODE,,,WideString,0","STVTERM_DESC,,,WideString,0"&lt;/Columns&gt;&#xD;
+     &lt;FreeType&gt;No&lt;/FreeType&gt;&#xD;
+     &lt;Height&gt;22&lt;/Height&gt;&#xD;
+     &lt;Left&gt;239&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Required&gt;No&lt;/Required&gt;&#xD;
+     &lt;ShowField&gt;STVTERM_DESC&lt;/ShowField&gt;&#xD;
+     &lt;SqlEntries&gt;Yes&lt;/SqlEntries&gt;&#xD;
+     &lt;TabOrder&gt;0&lt;/TabOrder&gt;&#xD;
+     &lt;TabStop&gt;Yes&lt;/TabStop&gt;&#xD;
+     &lt;Top&gt;194&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;parm_DD_Term&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;151&lt;/Width&gt;&#xD;
+    &lt;/control&gt;&#xD;
+    &lt;control Type="DropDown"&gt;&#xD;
+     &lt;AutoSelect&gt;No&lt;/AutoSelect&gt;&#xD;
+     &lt;Choices&gt;&amp;lt;Data&amp;gt;&amp;lt;Lines&amp;gt;Student&#xD;
+Contract&amp;lt;/Lines&amp;gt;&amp;lt;Query&amp;gt;&amp;lt;ADOOptions/&amp;gt;&amp;lt;/Query&amp;gt;&amp;lt;/Data&amp;gt;&lt;/Choices&gt;&#xD;
+     &lt;ChooseField&gt;Entity&lt;/ChooseField&gt;&#xD;
+     &lt;Columns&gt;"Entity,,,String,0"&lt;/Columns&gt;&#xD;
+     &lt;FreeType&gt;No&lt;/FreeType&gt;&#xD;
+     &lt;Height&gt;22&lt;/Height&gt;&#xD;
+     &lt;Left&gt;239&lt;/Left&gt;&#xD;
+     &lt;ParentFont&gt;Yes&lt;/ParentFont&gt;&#xD;
+     &lt;Required&gt;Yes&lt;/Required&gt;&#xD;
+     &lt;ShowField&gt;Entity&lt;/ShowField&gt;&#xD;
+     &lt;SqlEntries&gt;No&lt;/SqlEntries&gt;&#xD;
+     &lt;TabOrder&gt;1&lt;/TabOrder&gt;&#xD;
+     &lt;TabStop&gt;Yes&lt;/TabStop&gt;&#xD;
+     &lt;Top&gt;162&lt;/Top&gt;&#xD;
+     &lt;VariableName&gt;parm_DD_Entity&lt;/VariableName&gt;&#xD;
+     &lt;Width&gt;87&lt;/Width&gt;&#xD;
+    &lt;/control&gt;&#xD;
+   &lt;/controls&gt;&#xD;
+   &lt;Color&gt;clBtnFace&lt;/Color&gt;&#xD;
+  &lt;/Form&gt;&#xD;
+ &lt;/Forms&gt;&#xD;
+ &lt;ExecutionOrder&gt;&lt;/ExecutionOrder&gt;&#xD;
+&lt;/datablock&gt;&#xD;
+</Data>
+      </Revision>
+    </Revisions>
+    <Children>
+      <Report Name="TWRBALN Argos Report">
+        <MaxRevisions>10</MaxRevisions>
+        <RevisionControl>Yes</RevisionControl>
+        <WebView>Inherit</WebView>
+        <Author>mkarthik</Author>
+        <Create_Date>Fri, 28 Mar 2014 15:54:04 -0400</Create_Date>
+        <Description>Argos Report of Oracle Report TWRBALN- Student Balances, Credit, Financial Aid, AR Memos</Description>
+        <Guid>3BDB482E-3F95-4191-A7A2-0CC141950704</Guid>
+        <Modify_Date>Tue, 30 Sep 2014 13:07:46 -0400</Modify_Date>
+        <Private>No</Private>
+        <Type>CSV</Type>
+        <LastRunDate>Wed, 1 Oct 2014 08:15:12 -0400</LastRunDate>
+        <Note Title="3 New columns added.">
+          <Text>Columns have been added to the report -
+1.FA_ FSUSP -  Financial Aid Suspended
+2. FA_SAPAP - Financial Aid Suspension Appeal
+3. FA_EFC
+3/29/2003 -
+4. FA_ISIR</Text>
+          <Author>mkarthik</Author>
+          <Modified_By>mkarthik</Modified_By>
+          <Added_Date>Thu, 17 Jan 2013 07:21:32 -0400</Added_Date>
+          <Activity_Date>Fri, 29 Mar 2013 14:08:32 -0400</Activity_Date>
+        </Note>
+        <Note Title="Replaced few columns with Student_Type column">
+          <Text>As per Joan Scionti -
+  ".... REMOVE the New Student, Returning Student, Returning Grad Student, Former Student
+And replace them with one field      Student Type = SGBSTDN_STYP_CODE  based on the Term Selected "...
+</Text>
+          <Author>mkarthik</Author>
+          <Modified_By/>
+          <Added_Date>Thu, 14 Feb 2013 12:33:43 -0400</Added_Date>
+          <Activity_Date>Thu, 14 Feb 2013 12:33:43 -0400</Activity_Date>
+        </Note>
+        <Note Title="Memo Activity Date added.">
+          <Text>Added new column to report - "Memo_Activity_Date" next to Memo_User.</Text>
+          <Author>mkarthik</Author>
+          <Modified_By/>
+          <Added_Date>Fri, 30 Aug 2013 13:50:29 -0400</Added_Date>
+          <Activity_Date>Fri, 30 Aug 2013 13:50:29 -0400</Activity_Date>
+        </Note>
+        <Note Title="Prior Payment Column Added.">
+          <Text>Added new column showing the last credit term student made any payment and the corresponding DCAT. Column in located at the end after FA_SAPAP
+</Text>
+          <Author>mkarthik</Author>
+          <Modified_By>mkarthik</Modified_By>
+          <Added_Date>Tue, 17 Dec 2013 14:09:06 -0400</Added_Date>
+          <Activity_Date>Tue, 17 Dec 2013 14:12:27 -0400</Activity_Date>
+        </Note>
+        <Note Title="2 Book Voucher columns added.">
+          <Text>Added 2 columns-
+Book_Amt,
+Newest_Book_Activity</Text>
+          <Author>mkarthik</Author>
+          <Modified_By/>
+          <Added_Date>Wed, 12 Feb 2014 08:36:09 -0400</Added_Date>
+          <Activity_Date>Wed, 12 Feb 2014 08:36:09 -0400</Activity_Date>
+        </Note>
+        <Note Title="Added two columns">
+          <Text>Added two columns to report -
+- Academic_Withdrawal_Date
+- Student_Withdrawal_date </Text>
+          <Author>mkarthik</Author>
+          <Modified_By/>
+          <Added_Date>Fri, 28 Mar 2014 09:06:09 -0400</Added_Date>
+          <Activity_Date>Fri, 28 Mar 2014 09:06:09 -0400</Activity_Date>
+        </Note>
+        <Note Title="Added Earliest_Transaction_DT">
+          <Text>Displays the the first trransaction date for the term min(TBRACC_Effective_date).
+
+Earliest_Transaction_DT before the Earliest_REG_DT</Text>
+          <Author>mkarthik</Author>
+          <Modified_By>mkarthik</Modified_By>
+          <Added_Date>Wed, 24 Sep 2014 13:43:58 -0400</Added_Date>
+          <Activity_Date>Tue, 30 Sep 2014 13:25:41 -0400</Activity_Date>
+        </Note>
+        <Revisions>
+          <Revision>
+            <Author>mkarthik</Author>
+            <ActivityDate>Fri, 28 Mar 2014 15:54:04 -0400</ActivityDate>
+            <Note>Created new report</Note>
+            <Data>&lt;CSV SaveHeader="Yes"&gt;
+ &lt;Fields&gt;
+  &lt;Field ColumnName="TERM" Field="TERM"/&gt;
+  &lt;Field ColumnName="ID" Field="ID"/&gt;
+  &lt;Field ColumnName="LAST" Field="LAST"/&gt;
+  &lt;Field ColumnName="FIRST" Field="FIRST"/&gt;
+  &lt;Field ColumnName="NAME" Field="NAME"/&gt;
+  &lt;Field ColumnName="SSN" Field="SSN"/&gt;
+  &lt;Field ColumnName="PRIMARY_MAJOR" Field="PRIMARY_MAJOR"/&gt;
+  &lt;Field ColumnName="MAJOR_DESC_1" Field="MAJOR_DESC_1"/&gt;
+  &lt;Field ColumnName="SECONDARY_MAJOR" Field="SECONDARY_MAJOR"/&gt;
+  &lt;Field ColumnName="MAJOR_DESC_2" Field="MAJOR_DESC_2"/&gt;
+  &lt;Field ColumnName="ACADEMIC_WITHDRAWAL_DATE" Field="ACADEMIC_WITHDRAWAL_DATE"/&gt;
+  &lt;Field ColumnName="STUDENT_WITHDRAWAL_DATE" Field="STUDENT_WITHDRAWAL_DATE"/&gt;
+  &lt;Field ColumnName="EARLIEST_REG_DATE" Field="EARLIEST_REG_DATE"/&gt;
+  &lt;Field ColumnName="FIRST_WEB_REG" Field="FIRST_WEB_REG"/&gt;
+  &lt;Field ColumnName="LAST_REG_DT" Field="LAST_REG_DT"/&gt;
+  &lt;Field ColumnName="LAST_WEB_REG" Field="LAST_WEB_REG"/&gt;
+  &lt;Field ColumnName="HEALTH" Field="HEALTH"/&gt;
+  &lt;Field ColumnName="INSURANCE_VOUCHER" Field="INSURANCE_VOUCHER"/&gt;
+  &lt;Field ColumnName="INSURANCE_VOUCHER_USER" Field="INSURANCE_VOUCHER_USER"/&gt;
+  &lt;Field ColumnName="FORMER_DUE_DATE" Field="FORMER_DUE_DATE"/&gt;
+  &lt;Field ColumnName="TOUCHNET_DUE_DATE" Field="TOUCHNET_DUE_DATE"/&gt;
+  &lt;Field ColumnName="BALANCE" Field="BALANCE"/&gt;
+  &lt;Field ColumnName="BOOK_AMT" Field="BOOK_AMT"/&gt;
+  &lt;Field ColumnName="BOOK_ACTIVITY" Field="BOOK_ACTIVITY"/&gt;
+  &lt;Field ColumnName="NECC_INST_BEFORE_TOUCHNET_AMT" Field="NECC_INST_BEFORE_TOUCHNET_AMT"/&gt;
+  &lt;Field ColumnName="AUTH" Field="AUTH"/&gt;
+  &lt;Field ColumnName="AUTH_DIFF" Field="AUTH_DIFF"/&gt;
+  &lt;Field ColumnName="AR_MEMO_AMT" Field="AR_MEMO_AMT"/&gt;
+  &lt;Field ColumnName="MEMO_USER" Field="MEMO_USER"/&gt;
+  &lt;Field ColumnName="MEMO_ACTIVITY_DATE" Field="MEMO_ACTIVITY_DATE"/&gt;
+  &lt;Field ColumnName="TN_INSTALLMENT_PLAN" Field="TN_INSTALLMENT_PLAN"/&gt;
+  &lt;Field ColumnName="TN_MEMO_AMT" Field="TN_MEMO_AMT"/&gt;
+  &lt;Field ColumnName="OTHER_MEMOS" Field="OTHER_MEMOS"/&gt;
+  &lt;Field ColumnName="SUM_CREDITS" Field="SUM_CREDITS"/&gt;
+  &lt;Field ColumnName="SUM_BILLABLE" Field="SUM_BILLABLE"/&gt;
+  &lt;Field ColumnName="ISIR" Field="ISIR"/&gt;
+  &lt;Field ColumnName="EFC" Field="FA_EFC"/&gt;
+  &lt;Field ColumnName="BILLING_COUNT" Field="BILLING_COUNT"/&gt;
+  &lt;Field ColumnName="RETC" Field="RETC"/&gt;
+  &lt;Field ColumnName="BY_CODE" Field="BY_CODE"/&gt;
+  &lt;Field ColumnName="BY_DATE" Field="BY_DATE"/&gt;
+  &lt;Field ColumnName="OTH_HOLDS" Field="OTH_HOLDS"/&gt;
+  &lt;Field ColumnName="STREET1" Field="STREET1"/&gt;
+  &lt;Field ColumnName="STREET2" Field="STREET2"/&gt;
+  &lt;Field ColumnName="CITY" Field="CITY"/&gt;
+  &lt;Field ColumnName="STATE" Field="STATE"/&gt;
+  &lt;Field ColumnName="ZIP" Field="ZIP"/&gt;
+  &lt;Field ColumnName="AREA" Field="AREA"/&gt;
+  &lt;Field ColumnName="PHONE" Field="PHONE"/&gt;
+  &lt;Field ColumnName="LIST_FUT_REG" Field="LIST_FUT_REG"/&gt;
+  &lt;Field ColumnName="STUDENT_TYPE" Field="STUDENT_TYPE"/&gt;
+  &lt;Field ColumnName="FA_FSUSP" Field="FA_FSUSP"/&gt;
+  &lt;Field ColumnName="FA_SAPAP" Field="FA_SAPAP"/&gt;
+  &lt;Field ColumnName="PRIOR_PAYMENT" Field="PRIOR_PAYMENT"/&gt;
+ &lt;/Fields&gt;
+&lt;/CSV&gt;
+</Data>
+          </Revision>
+          <Revision>
+            <Author>mkarthik</Author>
+            <ActivityDate>Tue, 30 Sep 2014 13:07:45 -0400</ActivityDate>
+            <Note>TRANSACTION_DT added</Note>
+            <Active>Yes</Active>
+            <Data>&lt;CSV IncludeByteOrderMark="No" SaveHeader="Yes"&gt;&#xD;
+ &lt;Fields&gt;&#xD;
+  &lt;Field ColumnName="TERM" Field="TERM"/&gt;&#xD;
+  &lt;Field ColumnName="ID" Field="ID"/&gt;&#xD;
+  &lt;Field ColumnName="LAST" Field="LAST"/&gt;&#xD;
+  &lt;Field ColumnName="FIRST" Field="FIRST"/&gt;&#xD;
+  &lt;Field ColumnName="NAME" Field="NAME"/&gt;&#xD;
+  &lt;Field ColumnName="SSN" Field="SSN"/&gt;&#xD;
+  &lt;Field ColumnName="PRIMARY_MAJOR" Field="PRIMARY_MAJOR"/&gt;&#xD;
+  &lt;Field ColumnName="MAJOR_DESC_1" Field="MAJOR_DESC_1"/&gt;&#xD;
+  &lt;Field ColumnName="SECONDARY_MAJOR" Field="SECONDARY_MAJOR"/&gt;&#xD;
+  &lt;Field ColumnName="MAJOR_DESC_2" Field="MAJOR_DESC_2"/&gt;&#xD;
+  &lt;Field ColumnName="ACADEMIC_WITHDRAWAL_DATE" Field="ACADEMIC_WITHDRAWAL_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="STUDENT_WITHDRAWAL_DATE" Field="STUDENT_WITHDRAWAL_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="EARLIEST_TRANSACTION_DT" Field="EARLIEST_TRANSACTION_DT"/&gt;&#xD;
+  &lt;Field ColumnName="EARLIEST_REG_DATE" Field="EARLIEST_REG_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="FIRST_WEB_REG" Field="FIRST_WEB_REG"/&gt;&#xD;
+  &lt;Field ColumnName="LAST_REG_DT" Field="LAST_REG_DT"/&gt;&#xD;
+  &lt;Field ColumnName="LAST_WEB_REG" Field="LAST_WEB_REG"/&gt;&#xD;
+  &lt;Field ColumnName="HEALTH" Field="HEALTH"/&gt;&#xD;
+  &lt;Field ColumnName="INSURANCE_VOUCHER" Field="INSURANCE_VOUCHER"/&gt;&#xD;
+  &lt;Field ColumnName="INSURANCE_VOUCHER_USER" Field="INSURANCE_VOUCHER_USER"/&gt;&#xD;
+  &lt;Field ColumnName="FORMER_DUE_DATE" Field="FORMER_DUE_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="TOUCHNET_DUE_DATE" Field="TOUCHNET_DUE_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="BALANCE" Field="BALANCE"/&gt;&#xD;
+  &lt;Field ColumnName="BOOK_AMT" Field="BOOK_AMT"/&gt;&#xD;
+  &lt;Field ColumnName="BOOK_ACTIVITY" Field="BOOK_ACTIVITY"/&gt;&#xD;
+  &lt;Field ColumnName="NECC_INST_BEFORE_TOUCHNET_AMT" Field="NECC_INST_BEFORE_TOUCHNET_AMT"/&gt;&#xD;
+  &lt;Field ColumnName="AUTH" Field="AUTH"/&gt;&#xD;
+  &lt;Field ColumnName="AUTH_DIFF" Field="AUTH_DIFF"/&gt;&#xD;
+  &lt;Field ColumnName="AR_MEMO_AMT" Field="AR_MEMO_AMT"/&gt;&#xD;
+  &lt;Field ColumnName="MEMO_USER" Field="MEMO_USER"/&gt;&#xD;
+  &lt;Field ColumnName="MEMO_ACTIVITY_DATE" Field="MEMO_ACTIVITY_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="TN_INSTALLMENT_PLAN" Field="TN_INSTALLMENT_PLAN"/&gt;&#xD;
+  &lt;Field ColumnName="TN_MEMO_AMT" Field="TN_MEMO_AMT"/&gt;&#xD;
+  &lt;Field ColumnName="OTHER_MEMOS" Field="OTHER_MEMOS"/&gt;&#xD;
+  &lt;Field ColumnName="SUM_CREDITS" Field="SUM_CREDITS"/&gt;&#xD;
+  &lt;Field ColumnName="SUM_BILLABLE" Field="SUM_BILLABLE"/&gt;&#xD;
+  &lt;Field ColumnName="ISIR" Field="ISIR"/&gt;&#xD;
+  &lt;Field ColumnName="EFC" Field="FA_EFC"/&gt;&#xD;
+  &lt;Field ColumnName="BILLING_COUNT" Field="BILLING_COUNT"/&gt;&#xD;
+  &lt;Field ColumnName="RETC" Field="RETC"/&gt;&#xD;
+  &lt;Field ColumnName="BY_CODE" Field="BY_CODE"/&gt;&#xD;
+  &lt;Field ColumnName="BY_DATE" Field="BY_DATE"/&gt;&#xD;
+  &lt;Field ColumnName="OTH_HOLDS" Field="OTH_HOLDS"/&gt;&#xD;
+  &lt;Field ColumnName="STREET1" Field="STREET1"/&gt;&#xD;
+  &lt;Field ColumnName="STREET2" Field="STREET2"/&gt;&#xD;
+  &lt;Field ColumnName="CITY" Field="CITY"/&gt;&#xD;
+  &lt;Field ColumnName="STATE" Field="STATE"/&gt;&#xD;
+  &lt;Field ColumnName="ZIP" Field="ZIP"/&gt;&#xD;
+  &lt;Field ColumnName="AREA" Field="AREA"/&gt;&#xD;
+  &lt;Field ColumnName="PHONE" Field="PHONE"/&gt;&#xD;
+  &lt;Field ColumnName="LIST_FUT_REG" Field="LIST_FUT_REG"/&gt;&#xD;
+  &lt;Field ColumnName="STUDENT_TYPE" Field="STUDENT_TYPE"/&gt;&#xD;
+  &lt;Field ColumnName="FA_FSUSP" Field="FA_FSUSP"/&gt;&#xD;
+  &lt;Field ColumnName="FA_SAPAP" Field="FA_SAPAP"/&gt;&#xD;
+  &lt;Field ColumnName="PRIOR_PAYMENT" Field="PRIOR_PAYMENT"/&gt;&#xD;
+ &lt;/Fields&gt;&#xD;
+&lt;/CSV&gt;&#xD;
+</Data>
+          </Revision>
+        </Revisions>
+      </Report>
+    </Children>
+  </DataBlock>
+</ArgosObjects>
